@@ -1,0 +1,5 @@
+# Parser generated from lisb.jison
+src/parser/lisb.parser.js
+
+# node dependencies
+node_modules
