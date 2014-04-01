@@ -23,7 +23,7 @@ module.exports = function(grunt) {
     nodeunit: {
       all: ['test/**/*_test.js'],
       options: {
-        reporter: 'default'
+        reporter: 'grunt'
       }
     }
   });

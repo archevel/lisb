@@ -1,16 +1,18 @@
+
 %lex
 %%
-
-\s+                   /* skip whitespace */
-"-"?[0-9]+("."[0-9]+)?\b  return 'NUMBER'
-"define"              return 'DEFINE'
-"'"                   return 'SYMBOLSTART'
-"("                   return 'PARENS_BEG'
-")"                   return 'PARENS_END'
-[A-Za-z$¤#!?&§+\\/\,.<>|*"~}{^-]+ return 'NAME'
-<<EOF>>               return 'EOF'
+\s+                     /* skip whitespace */
+"define"                                                    return 'DEFINE'
+("-"(?!\d+)|[a-zA-Z=*+/<>!\?\$\^])[a-zA-Z0-9=*+/<>!\?\-$\^]*    return 'IDENTIFIER'
+"-"?[0-9]+("."[0-9]+)?                   return 'NUMBER'
+"'"                                                         return 'SYMBOLSTART'
+"("                                                         return 'PARENS_BEG'
+")"                                                         return 'PARENS_END'
+<<EOF>>                                                     return 'EOF'
 
 /lex
+
+
 
 %start progr
 %% /* language grammar */
@@ -21,8 +23,8 @@ progr
     ;
 
 statements
-    : statement
-    { $$ = [$1]; }
+    : 
+    { $$ = []; }
     | statements statement  
     { $$ = $1; $1.push($2);  }
     ;
@@ -30,67 +32,58 @@ statements
 statement
     : expression
     { $$ = $1; }
-    | variable_def
-    { $$ = $1; }
-    | function_def
+    | definition
     { $$ = $1; }
     ;
 
-variable_def
-    : PARENS_BEG DEFINE NAME expression PARENS_END
+definition
+    : PARENS_BEG DEFINE IDENTIFIER expression PARENS_END
     { $$ = { 'type':'variable_def', 'name': $3, 'value': $4 }; }
+    | PARENS_BEG DEFINE function_def function_body PARENS_END
+    { $$ = { 'type':'function_def', 'name': $3['name'], 'params': $3['params'], 'body': $4 }; }
     ;
 
 function_def
-    : PARENS_BEG DEFINE NAME params body PARENS_END
-    { $$ = { 'type':'function_def', 'name': $3, params: $4, 'body': $5 }; }
+    : PARENS_BEG IDENTIFIER function_params PARENS_END
+    { $$ = { 'name': $2, 'params': $3 }; }
     ;
 
-params
-    : PARENS_BEG param_list PARENS_END
-    { $$ = $2; }
+function_params
+    : 
+    { $$ = []; }
+    | function_params IDENTIFIER
+    { $$ = $1; $$.push($2); }
     ;
 
-param_list
-    : NAME 
+function_body
+    : statments
+    { $$ = $1; }
+    | expression
     { $$ = [$1]; }
-    | param_list NAME
-    { $$ = $1; $1.push($2); }
     ;
 
-body
-    : PARENS_BEGIN function PARENS_END
-    { console.log('body function_call', $1);$$ = $1; }
-    | PARENS_BEG statements PARENS_END
-    { $$ = $2.push($3); console.log('body statements', $$);}
+invocation
+    : PARENS_BEG expression invocation_args PARENS_END
+    { $$ = { 'type': 'invocation', 'func': $2, 'args':$3 }; }
     ;
 
-expressions
-    : expression
-    { $$ = [$1]; }
-    | expressions expression
-    { $$ = $1; $1.push($2);  }
+invocation_args
+    :
+    { $$ = []; }
+    | invocation_args expression
+    { $$ = $1; $$.push($2); }
     ;
-
 
 expression
     : value
-    | function_call
-    ;
-
-function_call
-    : PARENS_BEGIN function PARENS_END
-    { $$ = $2; }
-    ;
-
-function
-    : NAME expressions
-    { $$ = { type: 'call', name: $1, args: $2 }; }
+    { $$ = $1; }
+    | invocation
+    { $$ = $1; }
     ;
 
 value 
     : NUMBER
-    {$$ = {'num':Number(yytext)};}
-    | NAME
-    { $$ = {'name': $1 }; }
+    { $$ = {'type':'num', 'value':Number(yytext)};}
+    | IDENTIFIER
+    { $$ = {'type':'identifier', 'name':yytext }; }
     ;
