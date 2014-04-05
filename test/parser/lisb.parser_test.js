@@ -48,22 +48,23 @@ exports['parser'] = nodeunit.testCase({
             // some symbols
             "*",
             "$",
-            //"¤",
+            "¤",
             "!",
             "?",
-            //"&",
-            //"§",
+            "&",
+            "§",
             "+",
-            //"\\",
+            "\\",
             "/",
-            //".",
             "<",
             ">",
-            //"|",
+            "|",
             "*",
-            //"~",
+            "~",
             "^",
             "-",
+            "=",
+            "%",
             // combinations
             "a2*",
             "--a",
@@ -78,6 +79,13 @@ exports['parser'] = nodeunit.testCase({
             test.strictEqual(identifier['type'], 'identifier');
             test.strictEqual(identifier['name'], complex_names[i]);
         }
+
+        var long_combined_name = complex_names.join("");
+        ast = lisb.parse(long_combined_name),
+            identifier = ast[0];
+
+        test.strictEqual(identifier['type'], 'identifier');
+        test.strictEqual(identifier['name'], long_combined_name);
 
         test.done();
     },
@@ -144,8 +152,95 @@ exports['parser'] = nodeunit.testCase({
 
         test.done();
 
-    }
+    },
+    'function body can contain several nested definitions': function(test) {
+        var ast = lisb.parse("(define (f a) (define d 10) (define (x b) (+ a  (* b d))) (x a))"),
+            body = ast[0]['body'];
 
+        test.strictEqual(body.length, 3)
+        test.deepEqual(body[0], {'type': 'variable_def', 'name':'d', 'value': { 'type': 'num', 'value': 10}})
+
+        test.done();
+    },
+
+    'function body must end with expression': function(test) {
+        
+        test.throws(function() {
+            lisb.parse("(define (f a) (define d 10) (define (x b) (+ a  (* b d))) )");
+        }); 
+
+        test.done();
+    },
+
+    'strings are valid values': function(test) {
+        var strings = [
+                    {input:'""', output:''}, 
+                    {input: '"Heelo"', output:"Heelo"},
+                    {input: '"This \\"should\\" also work"', output:'This "should" also work'},
+                    {input: '"This \\nshould\\n also work"', output:"This \nshould\n also work"}
+                    ]
+        for (var i = 0; i < strings.length; i++) {
+            var ast = lisb.parse(strings[i].input);
+            test.deepEqual(ast[0], {'type': 'string', 'value': strings[i].output });
+        }
+        test.done();
+    },
+    'strings must be on single line and cant escape into JavaScript': function(test) {
+        test.throws(function() {
+            lisb.parse('"hello\n world"')
+        });
+
+        test.throws(function() {
+            lisb.parse('"hello world\\"')
+        });
+
+        test.throws(function() {
+            lisb.parse('"hello world\\"console.log("FOOOOOOO");""')
+        });
+        test.done();
+    },
+
+    'symbols are valid values': function(test) {
+        var validSymbols = [
+                    {input:"'aoe", output:"aoe"}, 
+                    {input: "'Heelo", output:"Heelo"},
+                    ]
+        for (var i = 0; i < validSymbols.length; i++) {
+            var ast = lisb.parse(validSymbols[i].input);
+            test.deepEqual(ast[0], {'type': 'symbol', 'name': validSymbols[i].output });
+        }
+        test.done();  
+    },
+
+    'invalid symbols throws parse error': function(test) {
+        test.throws(function() {
+            lisb.parse("';")
+        });
+        test.throws(function() {
+            lisb.parse("''")
+        });
+        test.throws(function() {
+            lisb.parse("'.")
+        });
+        test.done();
+    },
+
+    'numeric "symbols" should be treated as numbers': function(test) {
+        var numbersInSymbols = [
+                    {input:"'2.01", output:2.01}, 
+                    {input: "'2", output:2},
+                    {input: "'-3", output:-3},
+                    {input: "'-0.0000001", output:-0.0000001},
+                    ]
+        for (var i = 0; i < numbersInSymbols.length; i++) {
+            var ast = lisb.parse(numbersInSymbols[i].input);
+            test.deepEqual(ast[0], {'type': 'num', 'value': numbersInSymbols[i].output });
+        }
+        test.done();  
+    }
+    // comments
+
+    // conditionals
 });
 
 
