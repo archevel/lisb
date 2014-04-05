@@ -1,7 +1,8 @@
 
 %lex
 %%
-\s+                     /* skip whitespace */
+
+(";"[^\n]*|\s+)                     /* skip whitespace and comments */
 "define"                                                        return 'DEFINE'
 ("-"(?!\d+)|[a-zA-Z=*+/<>!\?\$\^~¤§&\\|%])[a-zA-Z0-9=*+/<>!\?\-$\^~¤§&\\|%]*    return 'IDENTIFIER'
 "-"?[0-9]+("."[0-9]+)?                                        return 'NUMBER'

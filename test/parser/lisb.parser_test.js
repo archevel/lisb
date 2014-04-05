@@ -237,6 +237,22 @@ exports['parser'] = nodeunit.testCase({
             test.deepEqual(ast[0], {'type': 'num', 'value': numbersInSymbols[i].output });
         }
         test.done();  
+    },
+
+    '";" starts a comment that makes parser ignore the rest of the line': function(test) {
+        var ast = lisb.parse(";(define foos ball)");
+
+        test.strictEqual(ast.length, 0);
+
+        var ast = lisb.parse("(define foos ball); hello");
+
+        test.strictEqual(ast.length, 1);
+
+        var ast = lisb.parse("(+ ;comment \n a b c)");
+
+        test.strictEqual(ast.length, 1);
+
+        test.done();
     }
     // comments
 
