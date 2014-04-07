@@ -253,10 +253,180 @@ exports['parser'] = nodeunit.testCase({
         test.strictEqual(ast.length, 1);
 
         test.done();
-    }
-    // comments
+    },
 
-    // conditionals
+    "if conditional expressions can be parsed": function(test) {        
+        var ast = lisb.parse("(if true a)"),
+            cond = ast[0];
+
+        test.deepEqual(cond, { 
+                'type': 'cond', 
+                'clauses': [{ 
+                    'type': 'clause', 
+                    'predicate': {
+                        'type':'identifier', 
+                        'name':'true'
+                    },
+                    'consequent': {
+                        'type':'identifier', 
+                        'name':'a'
+                    }
+                }]
+            });
+
+        test.done();
+    },
+
+    "if conditional expression with else consequent": function(test) {
+        var ast = lisb.parse("(if false a b)"),
+            cond = ast[0];
+
+        test.deepEqual(cond, { 
+            'type': 'cond', 
+            'clauses': [{ 
+                'type': 'clause', 
+                'predicate': {
+                    'type':'identifier', 
+                    'name':'false'
+                },
+                'consequent': {
+                    'type':'identifier', 
+                    'name':'a'
+                }
+            },
+            { 
+                'type': 'else', 
+                'consequent': {
+                    'type':'identifier', 
+                    'name':'b'
+                }
+            }]
+        });
+
+        test.done();          
+    },
+
+    "if conditional expressions function calls are valid predicates": function(test) {        
+        var ast = lisb.parse("(if (something o) a)"),
+            cond = ast[0];
+
+        test.deepEqual(cond, { 
+                'type': 'cond', 
+                'clauses': [{ 
+                    'type': 'clause', 
+                    'predicate': {
+                        'type': 'invocation', 
+                        'func': {'type': 'identifier', 'name':'something'},
+                        'args': [{'type': 'identifier', 'name':'o'}]                        
+                    },
+                    'consequent': {
+                        'type':'identifier', 
+                        'name':'a'
+                    }
+                }]
+            });
+
+        test.done();
+    },
+
+    "cond conditional expressions can be parsed": function(test) {
+        var ast = lisb.parse("(cond (false a))"),
+            cond = ast[0];
+
+        test.deepEqual(cond, { 
+                'type': 'cond', 
+                'clauses': [{ 
+                    'type': 'clause', 
+                    'predicate': {
+                        'type':'identifier', 
+                        'name':'false'
+                    },
+                    'consequent': {
+                        'type':'identifier', 
+                        'name':'a'
+                    }
+                }]
+            });
+
+        test.done();
+    },
+
+    "cond conditional expressions can have several clauses": function(test) {
+        var ast = lisb.parse("(cond (false a) (true b))"),
+            cond = ast[0];
+
+        test.deepEqual(cond, { 
+                'type': 'cond', 
+                'clauses': [{ 
+                    'type': 'clause', 
+                    'predicate': {
+                        'type':'identifier', 
+                        'name':'false'
+                    },
+                    'consequent': {
+                        'type':'identifier', 
+                        'name':'a'
+                    }
+                },
+                { 
+                    'type': 'clause', 
+                    'predicate': {
+                        'type':'identifier', 
+                        'name':'true'
+                    },
+                    'consequent': {
+                        'type':'identifier', 
+                        'name':'b'
+                    }
+                }]
+            });
+
+        test.done();
+    },
+
+    "cond conditional expression with else consequent": function(test) {
+        var ast = lisb.parse("(cond (false x) (else  y))"),
+            cond = ast[0];
+
+        test.deepEqual(cond, { 
+            'type': 'cond', 
+            'clauses': [{ 
+                'type': 'clause', 
+                'predicate': {
+                    'type':'identifier', 
+                    'name':'false'
+                },
+                'consequent': {
+                    'type':'identifier', 
+                    'name':'x'
+                }
+            },
+            { 
+                'type': 'else', 
+                'consequent': {
+                    'type':'identifier', 
+                    'name':'y'
+                }
+            }]
+        });
+
+        test.done();          
+    },
+
+    "defines are not ok in consequents": function(test) {        
+        test.throws(function() {
+            lisb.parse("(if truthyvalue ((define x 4) x))");
+        });
+        test.throws(function() {
+            lisb.parse("(cond (truthyvalue ((define x 4) x)))");
+        });
+           
+        test.done();
+    }
+
+    // truth literals #t, #f,
+
+    // symbol lists
 });
 
 

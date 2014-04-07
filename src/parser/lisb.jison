@@ -4,9 +4,12 @@
 
 (";"[^\n]*|\s+)                     /* skip whitespace and comments */
 "define"                                                        return 'DEFINE'
+"cond"                                                          return 'COND'
+"if"                                                            return 'IF'
+"else"                                                          return 'ELSE'
 ("-"(?!\d+)|[a-zA-Z=*+/<>!\?\$\^~¤§&\\|%])[a-zA-Z0-9=*+/<>!\?\-$\^~¤§&\\|%]*    return 'IDENTIFIER'
-"-"?[0-9]+("."[0-9]+)?                                        return 'NUMBER'
-"\"".*"\""                                                      return 'STRING'
+"-"?[0-9]+("."[0-9]+)?                                          return 'NUMBER'
+"\"".*"\""                                                      return 'STRING' 
 "("                                                             return 'PARENS_BEG'
 ")"                                                             return 'PARENS_END'
 "'"                                                             return 'SYMBOLSTART'
@@ -72,7 +75,48 @@ invocation_args
 expression
     : value
     { $$ = $1; }
+    | conditional
+    { $$ = $1; }
     | invocation
+    { $$ = $1; }
+    ;
+
+conditional
+    : PARENS_BEG IF predicate consequent PARENS_END
+    { $$ = { 'type': 'cond', 'clauses': [{ 'type': 'clause', 'predicate': $3, 'consequent': $4 }]}; }
+    | PARENS_BEG IF predicate consequent alternative PARENS_END
+    { $$ = { 'type': 'cond', 'clauses': [{ 'type': 'clause', 'predicate': $3, 'consequent': $4 }, { 'type': 'else', 'consequent': $5 }]}; }
+    | PARENS_BEG COND clauses  PARENS_END
+    { $$ = { 'type': 'cond', 'clauses': $3 }; }
+    | PARENS_BEG COND clauses PARENS_BEG ELSE expression PARENS_END PARENS_END
+    { $3.push({ 'type': 'else', 'consequent': $6 } ); $$ = { 'type': 'cond', 'clauses': $3 }; }
+    ; 
+
+clauses
+    : clause
+    { $$ = [$1]; }
+    | clauses clause
+    { $$ = $1; $$.push($2); }
+    ;
+
+clause
+    : PARENS_BEG predicate consequent PARENS_END
+    { $$ = { 'type': 'clause', 'predicate': $2, 'consequent': $3 }; }
+    ;
+
+
+predicate
+    : expression
+    { $$ = $1; }
+    ;
+
+consequent
+    : expression
+    { $$ = $1; }
+    ;
+
+alternative
+    : expression
     { $$ = $1; }
     ;
 
