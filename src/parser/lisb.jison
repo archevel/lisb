@@ -7,12 +7,16 @@
 "cond"                                                          return 'COND'
 "if"                                                            return 'IF'
 "else"                                                          return 'ELSE'
+"lambda"                                                        return 'LAMBDA'
+"let"                                                           return 'LET'
 ("-"(?!\d+)|[a-zA-Z=*+/<>!\?\$\^~¤§&\\|%])[a-zA-Z0-9=*+/<>!\?\-$\^~¤§&\\|%]*    return 'IDENTIFIER'
 "-"?[0-9]+("."[0-9]+)?                                          return 'NUMBER'
 "\"".*"\""                                                      return 'STRING' 
 "("                                                             return 'PARENS_BEG'
 ")"                                                             return 'PARENS_END'
 "'"                                                             return 'SYMBOLSTART'
+"#t"                                                            return 'TRUE'
+"#f"                                                            return 'FALSE'
 <<EOF>>                                                         return 'EOF'
 
 /lex
@@ -57,7 +61,7 @@ function_params
     : 
     { $$ = []; }
     | function_params IDENTIFIER
-    { $$ = $1; $$.push($2); }
+    { $$ = $1; $$.push({'type':'identifier', 'name':$2}); }
     ;
 
 invocation
@@ -79,6 +83,24 @@ expression
     { $$ = $1; }
     | invocation
     { $$ = $1; }
+    | let_expr
+    ;
+
+let_expr 
+    : PARENS_BEG LET PARENS_BEG params_args PARENS_END statements expression PARENS_END
+    { $6.push($7); $$ = { 'type': 'invocation', 'func': { 'type': 'lambda', 'params': $4.params, 'body': $6 }, 'args': $4.args }; }
+    ;
+
+params_args
+    :
+    { $$ ={ 'params': [], 'args': [] }; }
+    | params_args param_arg
+    { $1.params.push($2.param); $1.args.push($2.arg); $$ = $1; }
+    ;
+
+param_arg
+    : PARENS_BEG IDENTIFIER expression PARENS_END
+    { $$ = { 'param': {'type':'identifier', 'name':$2 }, 'arg': $3 }; }
     ;
 
 conditional
@@ -86,15 +108,15 @@ conditional
     { $$ = { 'type': 'cond', 'clauses': [{ 'type': 'clause', 'predicate': $3, 'consequent': $4 }]}; }
     | PARENS_BEG IF predicate consequent alternative PARENS_END
     { $$ = { 'type': 'cond', 'clauses': [{ 'type': 'clause', 'predicate': $3, 'consequent': $4 }, { 'type': 'else', 'consequent': $5 }]}; }
-    | PARENS_BEG COND clauses  PARENS_END
-    { $$ = { 'type': 'cond', 'clauses': $3 }; }
+    | PARENS_BEG COND clauses clause  PARENS_END
+    { $3.push($4); $$ = { 'type': 'cond', 'clauses': $3 }; }
     | PARENS_BEG COND clauses PARENS_BEG ELSE expression PARENS_END PARENS_END
     { $3.push({ 'type': 'else', 'consequent': $6 } ); $$ = { 'type': 'cond', 'clauses': $3 }; }
     ; 
 
 clauses
-    : clause
-    { $$ = [$1]; }
+    : 
+    { $$ = []; }
     | clauses clause
     { $$ = $1; $$.push($2); }
     ;
@@ -125,10 +147,21 @@ value
     { $$ = {'type':'num', 'value':Number(yytext)}; }
     | IDENTIFIER
     { $$ = {'type':'identifier', 'name':yytext }; }
+    | boolean
+    { $$ = {'type':'boolean', value: $1 }; }
     | STRING
     { $$ = {'type':'string', value: eval($1) }; }
     | SYMBOLSTART IDENTIFIER
     { $$ = {'type':'symbol', 'name':$2 }; }
     | SYMBOLSTART NUMBER
     { $$ = {'type':'num', 'value':Number(yytext)}; }
+    | PARENS_BEG LAMBDA PARENS_BEG function_params PARENS_END statements expression PARENS_END
+    { $6.push($7); $$ = { 'type':'lambda', 'params': $4, 'body': $6 }; }
+    ;
+
+boolean
+    : TRUE
+    { $$ = true; }
+    | FALSE
+    { $$ = false; }
     ;

@@ -120,7 +120,7 @@ exports['parser'] = nodeunit.testCase({
             def = ast[0];
         test.strictEqual(def['type'], 'function_def');
         test.strictEqual(def['name'], 'x');
-        test.deepEqual(def['params'], ['a']);
+        test.deepEqual(def['params'], [{'type':'identifier', 'name':'a' }]);
         test.ok(def.hasOwnProperty('body'));
         test.done();
     },
@@ -129,7 +129,7 @@ exports['parser'] = nodeunit.testCase({
             def = ast[0];
         test.strictEqual(def['type'], 'function_def');
         test.strictEqual(def['name'], 'fun');
-        test.deepEqual(def['params'], ['a', 'b', 'c', 'd']);
+        test.deepEqual(def['params'], [{'type':'identifier', 'name':'a' }, {'type':'identifier', 'name':'b' }, {'type':'identifier', 'name':'c' }, {'type':'identifier', 'name':'d' }]);
         test.ok(def.hasOwnProperty('body'));
         test.done();
     },
@@ -384,7 +384,7 @@ exports['parser'] = nodeunit.testCase({
         test.done();
     },
 
-    "cond conditional expression with else consequent": function(test) {
+    "cond conditional expression with else clause": function(test) {
         var ast = lisb.parse("(cond (false x) (else  y))"),
             cond = ast[0];
 
@@ -413,22 +413,167 @@ exports['parser'] = nodeunit.testCase({
         test.done();          
     },
 
-    "defines are not ok in consequents": function(test) {        
+    "cond conditional with only else clause": function(test) {
+        var ast = lisb.parse("(cond (else  y))"),
+            cond = ast[0];
+
+        test.deepEqual(cond, { 
+            'type': 'cond', 
+            'clauses': [{ 
+                'type': 'else', 
+                'consequent': {
+                    'type':'identifier', 
+                    'name':'y'
+                }
+            }]
+        });
+
+        test.done();
+    },
+
+    "conditionals without consequent fails": function(test) {
         test.throws(function() {
-            lisb.parse("(if truthyvalue ((define x 4) x))");
+            lisb.parse("(if )")
+        });
+
+        test.throws(function() {
+            lisb.parse("(cond )")
+        });
+        test.done();
+    },
+
+    "defines are not ok in conditionals": function(test) {   
+        // TODO: Find out if these are interpreted as function invocations
+        test.throws(function() {
+            lisb.parse("(if truthyvalue ((define x 4) x))"); 
         });
         test.throws(function() {
             lisb.parse("(cond (truthyvalue ((define x 4) x)))");
         });
            
+        test.throws(function() {
+            lisb.parse("(if ((define x 4) x)) value");
+        });
+        test.throws(function() {
+            lisb.parse("(cond (((define x 4) x) truthyvalue ))");
+        });
+
+        test.done();
+    },
+
+    "truth literals #t and #f are valid values": function(test) {
+        var ast = lisb.parse("#t"),
+            bool = ast[0];
+        test.deepEqual(bool, { 'type': 'boolean', 'value': true })
+
+        ast = lisb.parse("#f"),
+        bool = ast[0];
+        test.deepEqual(bool, { 'type': 'boolean', 'value': false })
+
+        test.done();
+    },
+
+    "lambdas can be parsed": function(test) {
+        var ast = lisb.parse("(lambda () #t)"),
+            lambda = ast[0];
+
+        test.deepEqual(lambda, {'type': 'lambda', 'params': [], 'body': [{ 'type': 'boolean', 'value': true }] })
+        test.done();
+    },
+
+    "lambdas can contain definitions": function(test) {
+        var ast = lisb.parse("(lambda (a b c) (define (k) (- b 99)) a)"),
+             lambdaBody = ast[0].body;
+
+        test.deepEqual(lambdaBody[0], { 
+            'type': 'function_def', 
+            'name': 'k', 
+            'params': [], 
+            'body': [{ 
+                'type': 'invocation', 
+                'func': {
+                    'type':'identifier', 
+                    'name': '-'
+                }, 
+                'args': [{ 
+                    'type': 
+                    'identifier', 
+                    'name': 'b' 
+                }, { 
+                    'type': 'num', 
+                    'value': 99 
+                }]
+            }]
+        });
+        test.done();
+    },
+
+    "lambdas can contain several statments": function(test) {
+        var ast = lisb.parse("(lambda (x) #t 1 3 (define z x) z)"),
+            lambda = ast[0];
+
+        test.deepEqual(lambda.body.length, 5);
+        test.done();
+    },
+    
+    "lambdas body can't end with definition": function(test) {
+        test.throws(function(){
+            lisb.parse("(lambda (x) (define z x))");
+        });
+
+        test.throws(function(){
+            lisb.parse("(lambda (x) (define identityFunc (x) x))");
+        });
+
+        test.done();
+    },
+
+    // let
+
+    "let is converted to lambda invoked with expression values": function(test) {
+        var ast = lisb.parse("(let ((x 3)) (+ x x))"),
+            letExpr = ast[0];
+
+        test.deepEqual(letExpr, {
+            'type': 'invocation', 
+            'func': { 
+                'type': 'lambda', 
+                'params': [ {
+                    'type':'identifier', 
+                    'name': 'x'
+                }],
+                'body': [{
+                    'type': 'invocation',
+                    'func': {
+                        'type': 'identifier',
+                        'name': '+'
+                    },
+                    'args': [{ 
+                        'type': 'identifier', 
+                        'name': 'x'
+                    }, { 
+                        'type': 'identifier', 
+                        'name': 'x'
+                    }]
+                }]
+            },
+            'args': [{
+                'type':'num', 
+                'value': 3
+            }]
+        })
+
         test.done();
     }
 
-    // truth literals #t, #f,
-
     // symbol lists
+
+    // "complex" sample program, e.g. fibonacci
 });
 
 
 }());
+
+
+
 
