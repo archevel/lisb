@@ -104,7 +104,7 @@ exports['parser'] = nodeunit.testCase({
     'define variables': function(test) {
         var ast = lisb.parse("(define x 2)"),
             def = ast[0];
-        test.strictEqual(def['type'], 'variable_def');
+        test.strictEqual(def['type'], 'def');
         test.strictEqual(def['name'], 'x');
         test.ok(def.hasOwnProperty('value'));
         test.done();
@@ -118,19 +118,18 @@ exports['parser'] = nodeunit.testCase({
     'define function': function(test) {
         var ast = lisb.parse("(define (x a) a)"),
             def = ast[0];
-        test.strictEqual(def['type'], 'function_def');
+        test.strictEqual(def['type'], 'def');
         test.strictEqual(def['name'], 'x');
-        test.deepEqual(def['params'], [{'type':'identifier', 'name':'a' }]);
-        test.ok(def.hasOwnProperty('body'));
+        test.deepEqual(def['value'], { 'type': 'lambda', 'params': [{'type':'identifier', 'name':'a' }], 'body': [{'type':'identifier', 'name': 'a'}]});
         test.done();
     },
     'define multi-argument function': function(test) {
         var ast = lisb.parse("(define (fun a b c d) a)"),
             def = ast[0];
-        test.strictEqual(def['type'], 'function_def');
+        test.strictEqual(def['type'], 'def');
         test.strictEqual(def['name'], 'fun');
-        test.deepEqual(def['params'], [{'type':'identifier', 'name':'a' }, {'type':'identifier', 'name':'b' }, {'type':'identifier', 'name':'c' }, {'type':'identifier', 'name':'d' }]);
-        test.ok(def.hasOwnProperty('body'));
+        test.deepEqual(def['value']['params'], [{'type':'identifier', 'name':'a' }, {'type':'identifier', 'name':'b' }, {'type':'identifier', 'name':'c' }, {'type':'identifier', 'name':'d' }]);
+        test.ok(def['value'].hasOwnProperty('body'));
         test.done();
     },
     'function call or literals not allowed as identifier in function definition': function(test) {
@@ -144,7 +143,7 @@ exports['parser'] = nodeunit.testCase({
     },
     'define function with function call as body': function(test) {
         var ast = lisb.parse("(define (fun a b c d) (+ a b c d 10))"),
-            body = ast[0]['body'];
+            body = ast[0]['value']['body'];
 
         test.strictEqual(body[0]['type'], 'invocation')
         test.deepEqual(body[0]['func'], {'type': 'identifier', 'name':'+'})
@@ -155,10 +154,10 @@ exports['parser'] = nodeunit.testCase({
     },
     'function body can contain several nested definitions': function(test) {
         var ast = lisb.parse("(define (f a) (define d 10) (define (x b) (+ a  (* b d))) (x a))"),
-            body = ast[0]['body'];
+            body = ast[0]['value']['body'];
 
         test.strictEqual(body.length, 3)
-        test.deepEqual(body[0], {'type': 'variable_def', 'name':'d', 'value': { 'type': 'num', 'value': 10}})
+        test.deepEqual(body[0], {'type': 'def', 'name':'d', 'value': { 'type': 'num', 'value': 10}})
 
         test.done();
     },
@@ -486,24 +485,27 @@ exports['parser'] = nodeunit.testCase({
              lambdaBody = ast[0].body;
 
         test.deepEqual(lambdaBody[0], { 
-            'type': 'function_def', 
-            'name': 'k', 
-            'params': [], 
-            'body': [{ 
-                'type': 'invocation', 
-                'func': {
-                    'type':'identifier', 
-                    'name': '-'
-                }, 
-                'args': [{ 
-                    'type': 
-                    'identifier', 
-                    'name': 'b' 
-                }, { 
-                    'type': 'num', 
-                    'value': 99 
+            'type': 'def', 
+            'name': 'k',
+            'value': { 
+                'type': 'lambda',
+                'params': [], 
+                'body': [{ 
+                    'type': 'invocation', 
+                    'func': {
+                        'type':'identifier', 
+                        'name': '-'
+                    }, 
+                    'args': [{ 
+                        'type': 
+                        'identifier', 
+                        'name': 'b' 
+                    }, { 
+                        'type': 'num', 
+                        'value': 99 
+                    }]
                 }]
-            }]
+            }
         });
         test.done();
     },
@@ -566,9 +568,9 @@ exports['parser'] = nodeunit.testCase({
         test.done();
     }
 
-    // symbol lists
-
-    // "complex" sample program, e.g. fibonacci
+    // TODO: Add more tests for let?
+    //  - symbol lists
+    //  - "complex" sample program, e.g. fibonacci
 });
 
 
