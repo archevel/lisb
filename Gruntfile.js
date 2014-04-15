@@ -12,12 +12,12 @@ module.exports = function(grunt) {
     //     dest: 'build/<%= pkg.name %>.min.js'
     //   }
     // }
-    shell: {                                // Task
-        generateParser: {                      // Target
-            options: {                      // Options
+    shell: {                                
+        generateParser: {                   
+            options: {                      
                 stdout: true
             },
-            command: 'jison src/parser/lisb.jison -o src/parser/lisb.parser.js'
+            command: 'node generate_parser.js'
         }
     },
     nodeunit: {

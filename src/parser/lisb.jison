@@ -47,14 +47,14 @@ statement
 
 definition
     : PARENS_BEG DEFINE IDENTIFIER expression PARENS_END
-    { $$ = { 'type':'variable_def', 'name': $3, 'value': $4 }; }
-    | PARENS_BEG DEFINE function_def statements expression PARENS_END
-    { $4.push($5); $$ = { 'type':'function_def', 'name': $3['name'], 'params': $3['params'], 'body': $4 }; }
+    { $$ = { 'type':'def', 'name': $3, 'value': $4 }; }
+    | PARENS_BEG DEFINE function_def PARENS_END
+    { $$ = { 'type':'def', 'name': $3['name'], 'value': $3['lambda'] }; }
     ;
 
 function_def
-    : PARENS_BEG IDENTIFIER function_params PARENS_END
-    { $$ = { 'name': $2, 'params': $3 }; }
+    : PARENS_BEG IDENTIFIER function_params PARENS_END statements expression
+    { $5.push($6); $$ = { 'name': $2, 'lambda': { 'type': 'lambda', 'params': $3, 'body': $5 } }; }
     ;
 
 function_params
