@@ -47,26 +47,26 @@ statement
 
 definition
     : PARENS_BEG DEFINE IDENTIFIER expression PARENS_END
-    { $$ = { 'type':'def', 'name': $3, 'value': $4 }; }
+    { $$ = new lisb.DEF($3, $4); }
     | PARENS_BEG DEFINE function_def PARENS_END
-    { $$ = { 'type':'def', 'name': $3['name'], 'value': $3['lambda'] }; }
+    { $$ =  new lisb.DEF($3['name'], $3['lambda']); }
     ;
 
 function_def
     : PARENS_BEG IDENTIFIER function_params PARENS_END statements expression
-    { $5.push($6); $$ = { 'name': $2, 'lambda': { 'type': 'lambda', 'params': $3, 'body': $5 } }; }
+    { $5.push($6); $$ = { 'name': $2, 'lambda': new lisb.LAMBDA($3, $5) }; }
     ;
 
 function_params
     : 
     { $$ = []; }
     | function_params IDENTIFIER
-    { $$ = $1; $$.push({'type':'identifier', 'name':$2}); }
+    { $$ = $1; $$.push(new lisb.ID($2)); }
     ;
 
 invocation
     : PARENS_BEG expression invocation_args PARENS_END
-    { $$ = { 'type': 'invocation', 'func': $2, 'args':$3 }; }
+    { $$ = new lisb.CALL($2, $3); }
     ;
 
 invocation_args
@@ -88,7 +88,7 @@ expression
 
 let_expr 
     : PARENS_BEG LET PARENS_BEG params_args PARENS_END statements expression PARENS_END
-    { $6.push($7); $$ = { 'type': 'invocation', 'func': { 'type': 'lambda', 'params': $4.params, 'body': $6 }, 'args': $4.args }; }
+    { $6.push($7); $$ = new lisb.CALL(new lisb.LAMBDA($4.params, $6), $4.args ); }
     ;
 
 params_args
@@ -100,18 +100,18 @@ params_args
 
 param_arg
     : PARENS_BEG IDENTIFIER expression PARENS_END
-    { $$ = { 'param': {'type':'identifier', 'name':$2 }, 'arg': $3 }; }
+    { $$ = { 'param': new lisb.ID($2), 'arg': $3 }; }
     ;
 
 conditional
     : PARENS_BEG IF predicate consequent PARENS_END
-    { $$ = { 'type': 'cond', 'clauses': [{ 'type': 'clause', 'predicate': $3, 'consequent': $4 }]}; }
+    { $$ = new lisb.COND([new lisb.CLAUSE($3, $4)]); }
     | PARENS_BEG IF predicate consequent alternative PARENS_END
-    { $$ = { 'type': 'cond', 'clauses': [{ 'type': 'clause', 'predicate': $3, 'consequent': $4 }, { 'type': 'else', 'consequent': $5 }]}; }
+    { $$ = new lisb.COND([new lisb.CLAUSE($3, $4)], $5); }
     | PARENS_BEG COND clauses clause  PARENS_END
-    { $3.push($4); $$ = { 'type': 'cond', 'clauses': $3 }; }
+    { $3.push($4); $$ = new lisb.COND($3); }
     | PARENS_BEG COND clauses PARENS_BEG ELSE expression PARENS_END PARENS_END
-    { $3.push({ 'type': 'else', 'consequent': $6 } ); $$ = { 'type': 'cond', 'clauses': $3 }; }
+    { $$ = new lisb.COND($3, $6); }
     ; 
 
 clauses
@@ -123,7 +123,7 @@ clauses
 
 clause
     : PARENS_BEG predicate consequent PARENS_END
-    { $$ = { 'type': 'clause', 'predicate': $2, 'consequent': $3 }; }
+    { $$ = new lisb.CLAUSE( $2,  $3 ); }
     ;
 
 
@@ -144,19 +144,19 @@ alternative
 
 value 
     : NUMBER
-    { $$ = {'type':'num', 'value':Number(yytext)}; }
+    { $$ = lisb.NUMBER(yytext); }
     | IDENTIFIER
-    { $$ = {'type':'identifier', 'name':yytext }; }
+    { $$ = new lisb.ID(yytext);; }
     | boolean
-    { $$ = {'type':'boolean', value: $1 }; }
+    { $$ = $1; }
     | STRING
-    { $$ = {'type':'string', value: eval($1) }; }
+    { $$ = lisb.STRING(eval($1)); }
     | SYMBOLSTART IDENTIFIER
-    { $$ = {'type':'symbol', 'name':$2 }; }
+    { $$ = new lisb.SYMB($2); }
     | SYMBOLSTART NUMBER
-    { $$ = {'type':'num', 'value':Number(yytext)}; }
+    { $$ = lisb.NUMBER(yytext); }
     | PARENS_BEG LAMBDA PARENS_BEG function_params PARENS_END statements expression PARENS_END
-    { $6.push($7); $$ = { 'type':'lambda', 'params': $4, 'body': $6 }; }
+    { $6.push($7); $$ = new lisb.LAMBDA($4, $6); }
     ;
 
 boolean

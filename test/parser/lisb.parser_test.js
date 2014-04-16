@@ -4,42 +4,43 @@
 var nodeunit = require('nodeunit');
 
 global.lisb = global.lisb || {};
+require('../../src/parser/lisb.statements.js');
 require('../../src/parser/lisb.parser.js');
 
 exports['parser'] = nodeunit.testCase({
     'simple integer value': function(test) {
         var ast = lisb.parser.parse("5"),
             num = ast[0];
-        test.strictEqual(num['type'], 'num');
-        test.strictEqual(num['value'],  5);
+        test.strictEqual(typeof num, 'number' )
+        test.strictEqual(num,  5)
         test.done();
     },
     'negative integer value': function(test) {
         var ast = lisb.parser.parse("-5"),
             num = ast[0];
-        test.strictEqual(num['type'], 'num');
-        test.strictEqual(num['value'], -5);
+        test.strictEqual(typeof num, 'number' )
+        test.strictEqual(num, -5)
         test.done();
     },
     'simple float value': function(test) {
         var ast = lisb.parser.parse("6.001"),
             num = ast[0];
-        test.strictEqual(num['type'], 'num');
-        test.strictEqual(num['value'],  6.001);
+        test.strictEqual(typeof num, 'number' )
+        test.strictEqual(num,  6.001)
         test.done();
     },
     'negative float value': function(test) {
         var ast = lisb.parser.parse("-23456.789"),
             num = ast[0];
-        test.strictEqual(num['type'], 'num');
-        test.strictEqual(num['value'], -23456.789);
+        test.strictEqual(typeof num, 'number' )
+        test.strictEqual(num, -23456.789)
         test.done();
     },
 
     'simple identifier': function(test) {
         var ast = lisb.parser.parse("a"),
             identifier = ast[0];
-        test.strictEqual(identifier['type'], 'identifier');
+        test.ok(identifier instanceof lisb.ID);
         test.strictEqual(identifier['name'], 'a');
         test.done();
     },
@@ -79,7 +80,7 @@ exports['parser'] = nodeunit.testCase({
         for (var i = 0; i < complex_names.length; i++) {
             var ast = lisb.parser.parse(complex_names[i]),
                 identifier = ast[0];
-            test.strictEqual(identifier['type'], 'identifier');
+            test.ok(identifier instanceof lisb.ID);
             test.strictEqual(identifier['name'], complex_names[i]);
         }
 
@@ -87,7 +88,7 @@ exports['parser'] = nodeunit.testCase({
         ast = lisb.parser.parse(long_combined_name),
             identifier = ast[0];
 
-        test.strictEqual(identifier['type'], 'identifier');
+        test.ok(identifier instanceof lisb.ID);
         test.strictEqual(identifier['name'], long_combined_name);
 
         test.done();
@@ -98,8 +99,8 @@ exports['parser'] = nodeunit.testCase({
             expectedValues = [-99.7, 2,-100, 7.4];
         for(var i = 0; i < ast.length; i++) {
             var num = ast[i];
-            test.strictEqual(num['type'], 'num');
-            test.strictEqual(num['value'], expectedValues[i]);
+            test.strictEqual(typeof num, 'number' )
+            test.strictEqual(num, expectedValues[i])
         }
         test.done();
     }, 
@@ -107,7 +108,7 @@ exports['parser'] = nodeunit.testCase({
     'define variables': function(test) {
         var ast = lisb.parser.parse("(define x 2)"),
             def = ast[0];
-        test.strictEqual(def['type'], 'def');
+        test.ok(def instanceof lisb.DEF);
         test.strictEqual(def['name'], 'x');
         test.ok(def.hasOwnProperty('value'));
         test.done();
@@ -121,17 +122,17 @@ exports['parser'] = nodeunit.testCase({
     'define function': function(test) {
         var ast = lisb.parser.parse("(define (x a) a)"),
             def = ast[0];
-        test.strictEqual(def['type'], 'def');
+        test.ok(def instanceof lisb.DEF);
         test.strictEqual(def['name'], 'x');
-        test.deepEqual(def['value'], { 'type': 'lambda', 'params': [{'type':'identifier', 'name':'a' }], 'body': [{'type':'identifier', 'name': 'a'}]});
+        test.deepEqual(def['value'], new lisb.LAMBDA([new lisb.ID('a')], [new lisb.ID('a')]));
         test.done();
     },
     'define multi-argument function': function(test) {
         var ast = lisb.parser.parse("(define (fun a b c d) a)"),
             def = ast[0];
-        test.strictEqual(def['type'], 'def');
+        test.ok(def instanceof lisb.DEF);
         test.strictEqual(def['name'], 'fun');
-        test.deepEqual(def['value']['params'], [{'type':'identifier', 'name':'a' }, {'type':'identifier', 'name':'b' }, {'type':'identifier', 'name':'c' }, {'type':'identifier', 'name':'d' }]);
+        test.deepEqual(def['value']['params'], [new lisb.ID('a'), new lisb.ID('b'), new lisb.ID('c'), new lisb.ID('d')]);
         test.ok(def['value'].hasOwnProperty('body'));
         test.done();
     },
@@ -148,9 +149,9 @@ exports['parser'] = nodeunit.testCase({
         var ast = lisb.parser.parse("(define (fun a b c d) (+ a b c d 10))"),
             body = ast[0]['value']['body'];
 
-        test.strictEqual(body[0]['type'], 'invocation')
-        test.deepEqual(body[0]['func'], {'type': 'identifier', 'name':'+'})
-        test.deepEqual(body[0]['args'], [{'type': 'identifier', 'name': 'a'}, {'type': 'identifier', 'name': 'b'}, {'type': 'identifier', 'name': 'c' }, {'type': 'identifier', 'name': 'd'}, {'type': 'num', 'value': 10 }]);
+        test.ok(body[0] instanceof lisb.CALL)
+        test.deepEqual(body[0]['func'], new lisb.ID('+'))
+        test.deepEqual(body[0]['args'], [new lisb.ID('a'), new lisb.ID('b'), new lisb.ID('c'), new lisb.ID('d'), 10 ]);
 
         test.done();
 
@@ -160,7 +161,7 @@ exports['parser'] = nodeunit.testCase({
             body = ast[0]['value']['body'];
 
         test.strictEqual(body.length, 3)
-        test.deepEqual(body[0], {'type': 'def', 'name':'d', 'value': { 'type': 'num', 'value': 10}})
+        test.deepEqual(body[0], new lisb.DEF('d', 10));
 
         test.done();
     },
@@ -183,7 +184,7 @@ exports['parser'] = nodeunit.testCase({
                     ]
         for (var i = 0; i < strings.length; i++) {
             var ast = lisb.parser.parse(strings[i].input);
-            test.deepEqual(ast[0], {'type': 'string', 'value': strings[i].output });
+            test.deepEqual(ast[0], strings[i].output );
         }
         test.done();
     },
@@ -209,7 +210,8 @@ exports['parser'] = nodeunit.testCase({
                     ]
         for (var i = 0; i < validSymbols.length; i++) {
             var ast = lisb.parser.parse(validSymbols[i].input);
-            test.deepEqual(ast[0], {'type': 'symbol', 'name': validSymbols[i].output });
+            test.ok(ast[0] instanceof lisb.SYMB)
+            test.deepEqual(ast[0], new lisb.SYMB(validSymbols[i].output) );
         }
         test.done();  
     },
@@ -236,7 +238,7 @@ exports['parser'] = nodeunit.testCase({
                     ]
         for (var i = 0; i < numbersInSymbols.length; i++) {
             var ast = lisb.parser.parse(numbersInSymbols[i].input);
-            test.deepEqual(ast[0], {'type': 'num', 'value': numbersInSymbols[i].output });
+            test.deepEqual(ast[0], numbersInSymbols[i].output);
         }
         test.done();  
     },
@@ -261,20 +263,9 @@ exports['parser'] = nodeunit.testCase({
         var ast = lisb.parser.parse("(if true a)"),
             cond = ast[0];
 
-        test.deepEqual(cond, { 
-                'type': 'cond', 
-                'clauses': [{ 
-                    'type': 'clause', 
-                    'predicate': {
-                        'type':'identifier', 
-                        'name':'true'
-                    },
-                    'consequent': {
-                        'type':'identifier', 
-                        'name':'a'
-                    }
-                }]
-            });
+        test.deepEqual(cond, new lisb.COND([
+                    new lisb.CLAUSE(new lisb.ID('true'), new lisb.ID('a'))
+                ]));
 
         test.done();
     },
@@ -283,27 +274,9 @@ exports['parser'] = nodeunit.testCase({
         var ast = lisb.parser.parse("(if false a b)"),
             cond = ast[0];
 
-        test.deepEqual(cond, { 
-            'type': 'cond', 
-            'clauses': [{ 
-                'type': 'clause', 
-                'predicate': {
-                    'type':'identifier', 
-                    'name':'false'
-                },
-                'consequent': {
-                    'type':'identifier', 
-                    'name':'a'
-                }
-            },
-            { 
-                'type': 'else', 
-                'consequent': {
-                    'type':'identifier', 
-                    'name':'b'
-                }
-            }]
-        });
+        test.deepEqual(cond, new lisb.COND([ 
+                new lisb.CLAUSE(new lisb.ID('false'), new lisb.ID('a'))],
+                new lisb.ID('b')));
 
         test.done();          
     },
@@ -312,21 +285,12 @@ exports['parser'] = nodeunit.testCase({
         var ast = lisb.parser.parse("(if (something o) a)"),
             cond = ast[0];
 
-        test.deepEqual(cond, { 
-                'type': 'cond', 
-                'clauses': [{ 
-                    'type': 'clause', 
-                    'predicate': {
-                        'type': 'invocation', 
-                        'func': {'type': 'identifier', 'name':'something'},
-                        'args': [{'type': 'identifier', 'name':'o'}]                        
-                    },
-                    'consequent': {
-                        'type':'identifier', 
-                        'name':'a'
-                    }
-                }]
-            });
+        test.deepEqual(cond, new lisb.COND([
+                    new lisb.CLAUSE(
+                        new lisb.CALL(
+                            new lisb.ID('something'),
+                            [new lisb.ID('o')]), 
+                    new lisb.ID('a'))]));
 
         test.done();
     },
@@ -335,20 +299,7 @@ exports['parser'] = nodeunit.testCase({
         var ast = lisb.parser.parse("(cond (false a))"),
             cond = ast[0];
 
-        test.deepEqual(cond, { 
-                'type': 'cond', 
-                'clauses': [{ 
-                    'type': 'clause', 
-                    'predicate': {
-                        'type':'identifier', 
-                        'name':'false'
-                    },
-                    'consequent': {
-                        'type':'identifier', 
-                        'name':'a'
-                    }
-                }]
-            });
+        test.deepEqual(cond, new lisb.COND([new lisb.CLAUSE(new lisb.ID('false'), new lisb.ID('a'))]));
 
         test.done();
     },
@@ -357,31 +308,10 @@ exports['parser'] = nodeunit.testCase({
         var ast = lisb.parser.parse("(cond (false a) (true b))"),
             cond = ast[0];
 
-        test.deepEqual(cond, { 
-                'type': 'cond', 
-                'clauses': [{ 
-                    'type': 'clause', 
-                    'predicate': {
-                        'type':'identifier', 
-                        'name':'false'
-                    },
-                    'consequent': {
-                        'type':'identifier', 
-                        'name':'a'
-                    }
-                },
-                { 
-                    'type': 'clause', 
-                    'predicate': {
-                        'type':'identifier', 
-                        'name':'true'
-                    },
-                    'consequent': {
-                        'type':'identifier', 
-                        'name':'b'
-                    }
-                }]
-            });
+        test.deepEqual(cond, new lisb.COND([
+                    new lisb.CLAUSE(new lisb.ID('false'), new lisb.ID('a')),
+                    new lisb.CLAUSE(new lisb.ID('true'), new lisb.ID('b'))
+                ]));
 
         test.done();
     },
@@ -390,27 +320,9 @@ exports['parser'] = nodeunit.testCase({
         var ast = lisb.parser.parse("(cond (false x) (else  y))"),
             cond = ast[0];
 
-        test.deepEqual(cond, { 
-            'type': 'cond', 
-            'clauses': [{ 
-                'type': 'clause', 
-                'predicate': {
-                    'type':'identifier', 
-                    'name':'false'
-                },
-                'consequent': {
-                    'type':'identifier', 
-                    'name':'x'
-                }
-            },
-            { 
-                'type': 'else', 
-                'consequent': {
-                    'type':'identifier', 
-                    'name':'y'
-                }
-            }]
-        });
+        test.deepEqual(cond, new lisb.COND([
+                new lisb.CLAUSE(new lisb.ID('false'), new lisb.ID('x'))],
+                new lisb.ID('y')));
 
         test.done();          
     },
@@ -419,16 +331,7 @@ exports['parser'] = nodeunit.testCase({
         var ast = lisb.parser.parse("(cond (else  y))"),
             cond = ast[0];
 
-        test.deepEqual(cond, { 
-            'type': 'cond', 
-            'clauses': [{ 
-                'type': 'else', 
-                'consequent': {
-                    'type':'identifier', 
-                    'name':'y'
-                }
-            }]
-        });
+        test.deepEqual(cond, new lisb.COND([], new lisb.ID('y')));
 
         test.done();
     },
@@ -466,11 +369,11 @@ exports['parser'] = nodeunit.testCase({
     "truth literals #t and #f are valid values": function(test) {
         var ast = lisb.parser.parse("#t"),
             bool = ast[0];
-        test.deepEqual(bool, { 'type': 'boolean', 'value': true })
+        test.deepEqual(bool, true)
 
         ast = lisb.parser.parse("#f"),
         bool = ast[0];
-        test.deepEqual(bool, { 'type': 'boolean', 'value': false })
+        test.deepEqual(bool, false)
 
         test.done();
     },
@@ -479,7 +382,8 @@ exports['parser'] = nodeunit.testCase({
         var ast = lisb.parser.parse("(lambda () #t)"),
             lambda = ast[0];
 
-        test.deepEqual(lambda, {'type': 'lambda', 'params': [], 'body': [{ 'type': 'boolean', 'value': true }] })
+        test.ok(lambda instanceof lisb.LAMBDA)
+        test.deepEqual(lambda, new lisb.LAMBDA([], [ true ]));
         test.done();
     },
 
@@ -487,29 +391,9 @@ exports['parser'] = nodeunit.testCase({
         var ast = lisb.parser.parse("(lambda (a b c) (define (k) (- b 99)) a)"),
              lambdaBody = ast[0].body;
 
-        test.deepEqual(lambdaBody[0], { 
-            'type': 'def', 
-            'name': 'k',
-            'value': { 
-                'type': 'lambda',
-                'params': [], 
-                'body': [{ 
-                    'type': 'invocation', 
-                    'func': {
-                        'type':'identifier', 
-                        'name': '-'
-                    }, 
-                    'args': [{ 
-                        'type': 
-                        'identifier', 
-                        'name': 'b' 
-                    }, { 
-                        'type': 'num', 
-                        'value': 99 
-                    }]
-                }]
-            }
-        });
+        test.deepEqual(lambdaBody[0],  new lisb.DEF('k', new lisb.LAMBDA([],[ 
+                    new lisb.CALL(new lisb.ID('-'), [new lisb.ID('b'), 99 ])
+                ])));
         test.done();
     },
 
@@ -539,35 +423,8 @@ exports['parser'] = nodeunit.testCase({
         var ast = lisb.parser.parse("(let ((x 3)) (+ x x))"),
             letExpr = ast[0];
 
-        test.deepEqual(letExpr, {
-            'type': 'invocation', 
-            'func': { 
-                'type': 'lambda', 
-                'params': [ {
-                    'type':'identifier', 
-                    'name': 'x'
-                }],
-                'body': [{
-                    'type': 'invocation',
-                    'func': {
-                        'type': 'identifier',
-                        'name': '+'
-                    },
-                    'args': [{ 
-                        'type': 'identifier', 
-                        'name': 'x'
-                    }, { 
-                        'type': 'identifier', 
-                        'name': 'x'
-                    }]
-                }]
-            },
-            'args': [{
-                'type':'num', 
-                'value': 3
-            }]
-        })
-
+        test.deepEqual(letExpr, new lisb.CALL(new lisb.LAMBDA([ new lisb.ID('x')], [new lisb.CALL(new lisb.ID('+'),[new lisb.ID('x'),new lisb.ID('x')])]), [ 3 ]));
+        
         test.done();
     }
 
