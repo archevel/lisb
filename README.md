@@ -1,4 +1,5 @@
-== LISB ==
+# LISB 
+
 LISB stands for LISP InSide the Browser. It is a javascript implementation of a Lisp Evaluator. The aims of LISB are:
 
  - To enable evaluation of Lisb scripts loaded by script tags on webpages. 
