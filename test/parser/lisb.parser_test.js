@@ -188,6 +188,15 @@ exports['parser'] = nodeunit.testCase({
         }
         test.done();
     },
+    
+    "consecutive strings are distinct expressions":function(test) {
+        var ast = lisb.parser.parse('"hello" "world"');
+
+        test.strictEqual(ast.length, 2);
+
+        test.done();
+    },
+
     'strings must be on single line and cant escape into JavaScript': function(test) {
         test.throws(function() {
             lisb.parser.parse('"hello\n world"')
@@ -426,8 +435,16 @@ exports['parser'] = nodeunit.testCase({
         test.deepEqual(letExpr, new lisb.CALL(new lisb.LAMBDA([ new lisb.ID('x')], [new lisb.CALL(new lisb.ID('+'),[new lisb.ID('x'),new lisb.ID('x')])]), [ 3 ]));
         
         test.done();
-    }
+    },
 
+
+    // "string before variable definition of string":function(test) {
+    //     var ast = lisb.parser.parse('"some string" (define x "another string")');
+
+    //     test.deepEqual(ast, ["some string", new lisb.DEF("x","another string")]);
+
+    //     test.done();
+    // }
     // TODO: Add more tests for let?
     //  - symbol lists
     //  - "complex" sample program, e.g. fibonacci

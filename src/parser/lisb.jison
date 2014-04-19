@@ -11,7 +11,7 @@
 "let"                                                           return 'LET'
 ("-"(?!\d+)|[a-zA-Z=*+/<>!\?\$\^~¤§&\\|%])[a-zA-Z0-9=*+/<>!\?\-$\^~¤§&\\|%]*    return 'IDENTIFIER'
 "-"?[0-9]+("."[0-9]+)?                                          return 'NUMBER'
-"\"".*"\""                                                      return 'STRING' 
+"\""([\\]["]|.)*?"\""                                                      return 'STRING' 
 "("                                                             return 'PARENS_BEG'
 ")"                                                             return 'PARENS_END'
 "'"                                                             return 'SYMBOLSTART'
