@@ -1,5 +1,5 @@
 (function() {
-"use strict"
+"use strict";
 var nodeunit = require('nodeunit');
 
 require('../src/lisb.evaluator.js');
@@ -15,16 +15,16 @@ var simpleTestValues = {
     "'a-symbol": new lisb.SYMB("a-symbol"),
     "#t": true,
     "#f": false
-}
+};
 
 
-exports['evaluator'] = nodeunit.testCase({
+exports.evaluator = nodeunit.testCase({
 
     'evaluates simple expessions': function(test) {
         for (var input in simpleTestValues) {
             var actual = lisb.evaluate(input);
 
-            test.deepEqual(actual, simpleTestValues[input])
+            test.deepEqual(actual, simpleTestValues[input]);
         }
 
         test.done();
@@ -39,7 +39,7 @@ exports['evaluator'] = nodeunit.testCase({
             var inputScript = script.replace('INPUT', input);
             var actual = lisb.evaluate(inputScript);
 
-            test.deepEqual(actual, simpleTestValues[input])
+            test.deepEqual(actual, simpleTestValues[input]);
         }
 
         test.done();
@@ -50,11 +50,10 @@ exports['evaluator'] = nodeunit.testCase({
         var script = '"some other script stuff" (define x INPUT) x';
 
         for (var input in simpleTestValues) {
-            console.log("Will be:", input);
             var inputScript = script.replace('INPUT', input);
             var actual = lisb.evaluate(inputScript);
 
-            test.deepEqual(actual, simpleTestValues[input])
+            test.deepEqual(actual, simpleTestValues[input]);
         }
 
         test.done();
@@ -63,10 +62,27 @@ exports['evaluator'] = nodeunit.testCase({
     "evaluates to the correct result when there are several definitions": function(test) {
 
         var actual = lisb.evaluate("(define a 1) (define b 2) a");
-        test.strictEqual(actual, 1)
+        test.strictEqual(actual, 1);
 
-        var actual = lisb.evaluate("(define a 1) (define b 2) b");
-        test.strictEqual(actual, 2)
+        actual = lisb.evaluate("(define a 1) (define b 2) b");
+        test.strictEqual(actual, 2);
+
+        test.done();
+    },
+
+
+    "set! can be used to alter the value of a previous definition": function(test) {
+
+        var actual = lisb.evaluate("(define a 1) (set! a 2) a");
+        test.strictEqual(actual, 2);
+
+        test.done();
+    },
+
+    "set! can not be used to define new variables": function(test) {
+        test.throws(function() {
+            lisb.evaluate("(set! a 2) a");
+        });
 
         test.done();
     },

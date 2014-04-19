@@ -4,6 +4,7 @@
 
 (";"[^\n]*|\s+)                     /* skip whitespace and comments */
 "define"                                                        return 'DEFINE'
+"set!"                                                          return 'SET'
 "cond"                                                          return 'COND'
 "if"                                                            return 'IF'
 "else"                                                          return 'ELSE'
@@ -43,7 +44,15 @@ statement
     { $$ = $1; }
     | definition
     { $$ = $1; }
+    | assignment
+    { $$ = $1; }
     ;
+
+assignment
+    : PARENS_BEG SET IDENTIFIER expression PARENS_END
+    { $$ = new lisb.SET($3, $4); }
+    ;
+
 
 definition
     : PARENS_BEG DEFINE IDENTIFIER expression PARENS_END

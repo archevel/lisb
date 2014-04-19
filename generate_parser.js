@@ -10,7 +10,7 @@ fs.readFile('src/parser/lisb.jison', function(err, data) {
     var parserSource = parser.generateModule({moduleName: "lisb.parser"});
     fs.writeFile('src/parser/lisb.parser.js', parserSource, function(err) {
         if (err) {            
-            console.log("Error writing file: ", err)
+            console.log("Error writing file: ", err);
         }
     });
 });

@@ -6,6 +6,7 @@
     "grunt-shell": "^0.6.4",
     "grunt-contrib-nodeunit": "^0.3.3",
     "nodeunit": "^0.8.6",
-    "jison": "^0.4.13"
+    "jison": "^0.4.13",
+    "grunt-contrib-jshint": "^0.10.0"
   }
 }

@@ -1,52 +1,13 @@
 
 (function() {
-"use strict"
+"use strict";
 var nodeunit = require('nodeunit');
 
 global.lisb = global.lisb || {};
 require('../../src/parser/lisb.statements.js');
 require('../../src/parser/lisb.parser.js');
 
-exports['parser'] = nodeunit.testCase({
-    'simple integer value': function(test) {
-        var ast = lisb.parser.parse("5"),
-            num = ast[0];
-        test.strictEqual(typeof num, 'number' )
-        test.strictEqual(num,  5)
-        test.done();
-    },
-    'negative integer value': function(test) {
-        var ast = lisb.parser.parse("-5"),
-            num = ast[0];
-        test.strictEqual(typeof num, 'number' )
-        test.strictEqual(num, -5)
-        test.done();
-    },
-    'simple float value': function(test) {
-        var ast = lisb.parser.parse("6.001"),
-            num = ast[0];
-        test.strictEqual(typeof num, 'number' )
-        test.strictEqual(num,  6.001)
-        test.done();
-    },
-    'negative float value': function(test) {
-        var ast = lisb.parser.parse("-23456.789"),
-            num = ast[0];
-        test.strictEqual(typeof num, 'number' )
-        test.strictEqual(num, -23456.789)
-        test.done();
-    },
-
-    'simple identifier': function(test) {
-        var ast = lisb.parser.parse("a"),
-            identifier = ast[0];
-        test.ok(identifier instanceof lisb.ID);
-        test.strictEqual(identifier['name'], 'a');
-        test.done();
-    },
-
-    'allowed complex identifier': function(test) {
-        var complex_names = [
+var complex_names = [
             "abcdefgklmnopqrstuvxyz", 
             "ABCDEFGKLMNOPQRSTUVXYZ",
             // some symbols
@@ -74,22 +35,66 @@ exports['parser'] = nodeunit.testCase({
             "--a",
             "-a-",
             "--2",
-            "--20-"
-        ];
+            "--20-" ];
+
+
+exports.parser = nodeunit.testCase({
+    'simple integer value': function(test) {
+        var ast = lisb.parser.parse("5"),
+            num = ast[0];
+        test.strictEqual(typeof num, 'number' );
+        test.strictEqual(num,  5);
+        test.done();
+    },
+    'negative integer value': function(test) {
+        var ast = lisb.parser.parse("-5"),
+            num = ast[0];
+        test.strictEqual(typeof num, 'number' );
+        test.strictEqual(num, -5);
+        test.done();
+    },
+    'simple float value': function(test) {
+        var ast = lisb.parser.parse("6.001"),
+            num = ast[0];
+        test.strictEqual(typeof num, 'number' );
+        test.strictEqual(num,  6.001);
+        test.done();
+    },
+    'negative float value': function(test) {
+        var ast = lisb.parser.parse("-23456.789"),
+            num = ast[0];
+        test.strictEqual(typeof num, 'number' );
+        test.strictEqual(num, -23456.789);
+        test.done();
+    },
+
+    'simple identifier': function(test) {
+        var ast = lisb.parser.parse("a"),
+            identifier = ast[0];
+        test.ok(identifier instanceof lisb.ID);
+        test.strictEqual(identifier.name, 'a');
+        test.done();
+    },
+
+    'allowed "complex" identifiers': function(test) {
 
         for (var i = 0; i < complex_names.length; i++) {
             var ast = lisb.parser.parse(complex_names[i]),
                 identifier = ast[0];
             test.ok(identifier instanceof lisb.ID);
-            test.strictEqual(identifier['name'], complex_names[i]);
+            test.strictEqual(identifier.name, complex_names[i]);
         }
 
-        var long_combined_name = complex_names.join("");
-        ast = lisb.parser.parse(long_combined_name),
+        test.done();
+    },
+
+    'all "complex" identifiers can be combined': function(test) {
+        var long_combined_name = complex_names.join(""),
+            ast = lisb.parser.parse(long_combined_name),
             identifier = ast[0];
 
         test.ok(identifier instanceof lisb.ID);
-        test.strictEqual(identifier['name'], long_combined_name);
+        test.strictEqual(identifier.name, long_combined_name);
 
         test.done();
     },
@@ -99,8 +104,8 @@ exports['parser'] = nodeunit.testCase({
             expectedValues = [-99.7, 2,-100, 7.4];
         for(var i = 0; i < ast.length; i++) {
             var num = ast[i];
-            test.strictEqual(typeof num, 'number' )
-            test.strictEqual(num, expectedValues[i])
+            test.strictEqual(typeof num, 'number' );
+            test.strictEqual(num, expectedValues[i]);
         }
         test.done();
     }, 
@@ -109,7 +114,7 @@ exports['parser'] = nodeunit.testCase({
         var ast = lisb.parser.parse("(define x 2)"),
             def = ast[0];
         test.ok(def instanceof lisb.DEF);
-        test.strictEqual(def['name'], 'x');
+        test.strictEqual(def.name, 'x');
         test.ok(def.hasOwnProperty('value'));
         test.done();
     },
@@ -123,17 +128,17 @@ exports['parser'] = nodeunit.testCase({
         var ast = lisb.parser.parse("(define (x a) a)"),
             def = ast[0];
         test.ok(def instanceof lisb.DEF);
-        test.strictEqual(def['name'], 'x');
-        test.deepEqual(def['value'], new lisb.LAMBDA([new lisb.ID('a')], [new lisb.ID('a')]));
+        test.strictEqual(def.name, 'x');
+        test.deepEqual(def.value, new lisb.LAMBDA([new lisb.ID('a')], [new lisb.ID('a')]));
         test.done();
     },
     'define multi-argument function': function(test) {
         var ast = lisb.parser.parse("(define (fun a b c d) a)"),
             def = ast[0];
         test.ok(def instanceof lisb.DEF);
-        test.strictEqual(def['name'], 'fun');
-        test.deepEqual(def['value']['params'], [new lisb.ID('a'), new lisb.ID('b'), new lisb.ID('c'), new lisb.ID('d')]);
-        test.ok(def['value'].hasOwnProperty('body'));
+        test.strictEqual(def.name, 'fun');
+        test.deepEqual(def.value.params, [new lisb.ID('a'), new lisb.ID('b'), new lisb.ID('c'), new lisb.ID('d')]);
+        test.ok(def.value.hasOwnProperty('body'));
         test.done();
     },
     'function call or literals not allowed as identifier in function definition': function(test) {
@@ -147,20 +152,20 @@ exports['parser'] = nodeunit.testCase({
     },
     'define function with function call as body': function(test) {
         var ast = lisb.parser.parse("(define (fun a b c d) (+ a b c d 10))"),
-            body = ast[0]['value']['body'];
+            body = ast[0].value.body;
 
-        test.ok(body[0] instanceof lisb.CALL)
-        test.deepEqual(body[0]['func'], new lisb.ID('+'))
-        test.deepEqual(body[0]['args'], [new lisb.ID('a'), new lisb.ID('b'), new lisb.ID('c'), new lisb.ID('d'), 10 ]);
+        test.ok(body[0] instanceof lisb.CALL);
+        test.deepEqual(body[0].func, new lisb.ID('+'));
+        test.deepEqual(body[0].args, [new lisb.ID('a'), new lisb.ID('b'), new lisb.ID('c'), new lisb.ID('d'), 10 ]);
 
         test.done();
 
     },
     'function body can contain several nested definitions': function(test) {
         var ast = lisb.parser.parse("(define (f a) (define d 10) (define (x b) (+ a  (* b d))) (x a))"),
-            body = ast[0]['value']['body'];
+            body = ast[0].value.body;
 
-        test.strictEqual(body.length, 3)
+        test.strictEqual(body.length, 3);
         test.deepEqual(body[0], new lisb.DEF('d', 10));
 
         test.done();
@@ -181,7 +186,7 @@ exports['parser'] = nodeunit.testCase({
                     {input: '"Heelo"', output:"Heelo"},
                     {input: '"This \\"should\\" also work"', output:'This "should" also work'},
                     {input: '"This \\nshould\\n also work"', output:"This \nshould\n also work"}
-                    ]
+                    ];
         for (var i = 0; i < strings.length; i++) {
             var ast = lisb.parser.parse(strings[i].input);
             test.deepEqual(ast[0], strings[i].output );
@@ -199,15 +204,15 @@ exports['parser'] = nodeunit.testCase({
 
     'strings must be on single line and cant escape into JavaScript': function(test) {
         test.throws(function() {
-            lisb.parser.parse('"hello\n world"')
+            lisb.parser.parse('"hello\n world"');
         });
 
         test.throws(function() {
-            lisb.parser.parse('"hello world\\"')
+            lisb.parser.parse('"hello world\\"');
         });
 
         test.throws(function() {
-            lisb.parser.parse('"hello world\\"console.log("FOOOOOOO");""')
+            lisb.parser.parse('"hello world\\"console.log("FOOOOOOO");""');
         });
         test.done();
     },
@@ -216,10 +221,10 @@ exports['parser'] = nodeunit.testCase({
         var validSymbols = [
                     {input:"'aoe", output:"aoe"}, 
                     {input: "'Heelo", output:"Heelo"},
-                    ]
+                    ];
         for (var i = 0; i < validSymbols.length; i++) {
             var ast = lisb.parser.parse(validSymbols[i].input);
-            test.ok(ast[0] instanceof lisb.SYMB)
+            test.ok(ast[0] instanceof lisb.SYMB);
             test.deepEqual(ast[0], new lisb.SYMB(validSymbols[i].output) );
         }
         test.done();  
@@ -227,13 +232,13 @@ exports['parser'] = nodeunit.testCase({
 
     'invalid symbols throws parse error': function(test) {
         test.throws(function() {
-            lisb.parser.parse("';")
+            lisb.parser.parse("';");
         });
         test.throws(function() {
-            lisb.parser.parse("''")
+            lisb.parser.parse("''");
         });
         test.throws(function() {
-            lisb.parser.parse("'.")
+            lisb.parser.parse("'.");
         });
         test.done();
     },
@@ -244,7 +249,8 @@ exports['parser'] = nodeunit.testCase({
                     {input: "'2", output:2},
                     {input: "'-3", output:-3},
                     {input: "'-0.0000001", output:-0.0000001},
-                    ]
+                    ];
+
         for (var i = 0; i < numbersInSymbols.length; i++) {
             var ast = lisb.parser.parse(numbersInSymbols[i].input);
             test.deepEqual(ast[0], numbersInSymbols[i].output);
@@ -257,11 +263,11 @@ exports['parser'] = nodeunit.testCase({
 
         test.strictEqual(ast.length, 0);
 
-        var ast = lisb.parser.parse("(define foos ball); hello");
+        ast = lisb.parser.parse("(define foos ball); hello");
 
         test.strictEqual(ast.length, 1);
 
-        var ast = lisb.parser.parse("(+ ;comment \n a b c)");
+        ast = lisb.parser.parse("(+ ;comment \n a b c)");
 
         test.strictEqual(ast.length, 1);
 
@@ -347,11 +353,11 @@ exports['parser'] = nodeunit.testCase({
 
     "conditionals without consequent fails": function(test) {
         test.throws(function() {
-            lisb.parser.parse("(if )")
+            lisb.parser.parse("(if )");
         });
 
         test.throws(function() {
-            lisb.parser.parse("(cond )")
+            lisb.parser.parse("(cond )");
         });
         test.done();
     },
@@ -378,11 +384,11 @@ exports['parser'] = nodeunit.testCase({
     "truth literals #t and #f are valid values": function(test) {
         var ast = lisb.parser.parse("#t"),
             bool = ast[0];
-        test.deepEqual(bool, true)
+        test.deepEqual(bool, true);
 
-        ast = lisb.parser.parse("#f"),
+        ast = lisb.parser.parse("#f");
         bool = ast[0];
-        test.deepEqual(bool, false)
+        test.deepEqual(bool, false);
 
         test.done();
     },
@@ -391,7 +397,7 @@ exports['parser'] = nodeunit.testCase({
         var ast = lisb.parser.parse("(lambda () #t)"),
             lambda = ast[0];
 
-        test.ok(lambda instanceof lisb.LAMBDA)
+        test.ok(lambda instanceof lisb.LAMBDA);
         test.deepEqual(lambda, new lisb.LAMBDA([], [ true ]));
         test.done();
     },
@@ -437,6 +443,36 @@ exports['parser'] = nodeunit.testCase({
         test.done();
     },
 
+
+    'set! can be parsed': function(test) {
+        var ast = lisb.parser.parse("(set! a 2)"),
+            set = ast[0];
+
+        test.deepEqual(set, new lisb.SET("a", 2));
+
+        test.done();
+    },
+
+    // 'set! must reference a identifier end with expression':function(test) {
+    //     test.throws(function() {
+    //         lisb.parser.parse("(set!)")
+    //     });
+
+    //     test.throws(function() {
+    //         lisb.parser.parse("(set!)")
+    //     });
+    // },
+
+    "define can't be redefined (yet?!)": function(test) {
+        // TODO: Consider if "keywords" should be allowed to be redefined
+        // (i.e. define, set!, lambda, let, cond, if, else).
+        // This would simplify the parser and shift that logic to the evaluate/apply functions.
+        // What are the pro's/con's? Is there a valid usecase for it?
+        test.throws(function() {
+            lisb.parser.parse("(let ((define (lambda (x) x))) (define 2))");
+        });
+        test.done();
+    },
 
     // "string before variable definition of string":function(test) {
     //     var ast = lisb.parser.parse('"some string" (define x "another string")');
