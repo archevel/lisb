@@ -12,16 +12,18 @@ function add(args) {
 }
 
 function evaluate(ast, environment) {
+    console.log(ast);
     for (var i = 0; i < ast.length; i++) {
         var statement = ast[i];
         if(statement instanceof lisb.DEF) {
-            environment[statement.name] = statement.value;
+            environment[statement.name] = evaluate([statement.value], environment);
         }
         if(statement instanceof lisb.SET) {
             if (environment[statement.name] === undefined) {
                 throw new LisbError("No definition found for: " + statement.name);
             }
-            environment[statement.name] = statement.value;
+
+            environment[statement.name] = evaluate([statement.value], environment);
         }
     }
     if (ast[ast.length - 1] instanceof lisb.ID) {
@@ -29,12 +31,16 @@ function evaluate(ast, environment) {
         return environment[id.name];
     }
 
+
     return ast[ast.length - 1];
 }
 
 function parseAndEvaluate (statments) {
-    var ast = lisb.parser.parse(statments);
-    return evaluate(ast, {});
+    console.log("evaluating...")
+    var ast = lisb.parser.parse(statments),
+        res = evaluate(ast, {});
+    console.log("done evaluating...");
+    return res;
 }
 
 lisb.evaluate = parseAndEvaluate

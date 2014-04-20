@@ -87,6 +87,32 @@ exports.evaluator = nodeunit.testCase({
         test.done();
     },
 
+    "variables can be used in definitions": function(test) {
+        var script = "(define a INPUT) (define b a) b";
+        for (var input in simpleTestValues) {
+            var inputScript = script.replace('INPUT', input);
+            var actual = lisb.evaluate(inputScript);
+
+            test.deepEqual(actual, simpleTestValues[input]);
+        }
+
+        test.done();
+
+    },
+
+    "variables can be used in assignments": function(test) {
+        var script = "(define a INPUT) (define b 3) (set! b a) b";
+        for (var input in simpleTestValues) {
+            var inputScript = script.replace('INPUT', input);
+            var actual = lisb.evaluate(inputScript);
+
+            test.deepEqual(actual, simpleTestValues[input]);
+        }
+
+        test.done();
+
+    },
+
 
 });
 
