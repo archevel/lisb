@@ -246,7 +246,8 @@ exports.evaluator = nodeunit.testCase({
         actual = lisb.evaluate('(define (my-gt a b) (> a b)) (my-gt 1000 10)');
         test.strictEqual(actual, true);
 
-        // TODO: add tests so we ensure the defined function is called.
+        actual = lisb.evaluate('(define (my-add a b) (+ a b)) (my-add 9 10)');
+        test.strictEqual(actual, 19);
 
         test.done();
     },
@@ -259,7 +260,21 @@ exports.evaluator = nodeunit.testCase({
         test.strictEqual(actual, 21);
 
         test.done();
-    }
+    },
+
+    "lambda functions works with different parameter names": function(test) {
+        var actual = lisb.evaluate('((lambda (c d) (+ d c)) 7 14)');
+        test.strictEqual(actual, 21);
+
+        test.done();
+    },
+
+    "recursive calls works": function(test) {
+        var actual = lisb.evaluate('(define (recurse-curse a) (if (< a 5) (recurse-curse (+ a 1)) a)) (recurse-curse 0)');
+        test.strictEqual(actual, 5);
+
+        test.done();
+    },
 
 });
 
