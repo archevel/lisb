@@ -1,26 +1,29 @@
+// TODO: Fix the global variable so it works in both browser and node.
 global.lisb = global.lisb || {};
 
 (function () {
 "use strict";
 
-function add(args) {
-    var rez = 0;
-    for(var i = 0; i < args.length; i++) {
-        rez += args[i];
-    }
-    return rez;
-}
-
-function greaterThan(args) {
-    // TODO: fix this to be a variadic function with three params:
-    // a,b, others. a must be greater than b and all values in others.
-    // TODO: all args must be numbers. Should we check this and throw an exception?
-    return args[0] > args[1]; 
-}
-
-function lessThan(args) {
-    return args[0] < args[1];
-}
+var predefinedFunctions = {
+    '+': function(args) {
+        // TODO: fix same as > function
+        var rez = 0;
+        for(var i = 0; i < args.length; i++) {
+            rez += args[i];
+        }
+        return rez;
+    },
+    '>': function(args) {
+        // TODO: fix this to be a variadic function with three params:
+        // a,b, others. a must be greater than b and all values in others.
+        // TODO: all args must be numbers. Should we check this and throw an exception?
+        return args[0] > args[1]; 
+    },
+    '<': function(args) {
+        // TODO: fix same as > function
+        return args[0] < args[1];
+    },
+};
 
 
 function evaluateStatement(statement, environment) {
@@ -32,15 +35,7 @@ function evaluateStatement(statement, environment) {
         return environment[statement.name];
     }
     else if (statement instanceof lisb.CALL) {
-        if (statement.func.name === ">") {
-            return greaterThan(statement.args);
-        } 
-        else if (statement.func.name === "<") {
-            return lessThan(statement.args);
-        }
-        else {
-            return add(statement.args);
-        }
+        return predefinedFunctions[statement.func.name](statement.args);
     }
     else if (statement instanceof lisb.COND) {
         for (var i = 0; i < statement.clauses.length; i++) {
