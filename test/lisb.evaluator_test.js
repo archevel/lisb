@@ -225,8 +225,41 @@ exports.evaluator = nodeunit.testCase({
         actual = lisb.evaluate('(+ -12 25)');
         test.strictEqual(actual, 13);
 
+        actual = lisb.evaluate('(+ 0.1 0.2)');
+        test.notEqual(actual, 0.3);
+        test.strictEqual(actual, 0.1 + 0.2); // Same arithmetic used as in js... 0.1 + 0.2 !== 0.3
+
         test.done();
     },
+
+    "evaluates arguments to calls to predefined functions": function(test) {
+        var actual = lisb.evaluate('(define a 3) (+ a 24.0)');
+        test.strictEqual(actual, 27.0);
+
+        test.done();
+    },
+
+    "defined functions can be called": function(test) {
+        var actual = lisb.evaluate('(define (my-gt a b) (> a b)) (my-gt 2 4)');
+        test.strictEqual(actual, false);
+
+        actual = lisb.evaluate('(define (my-gt a b) (> a b)) (my-gt 1000 10)');
+        test.strictEqual(actual, true);
+
+        // TODO: add tests so we ensure the defined function is called.
+
+        test.done();
+    },
+
+    "lambda functions can be called": function(test) {
+        var actual = lisb.evaluate('((lambda (a b) (> a b)) 3 4)');
+        test.strictEqual(actual, false);
+
+        actual = lisb.evaluate('((lambda (a b) (+ a b)) 7 14)');
+        test.strictEqual(actual, 21);
+
+        test.done();
+    }
 
 });
 

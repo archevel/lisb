@@ -35,7 +35,25 @@ function evaluateStatement(statement, environment) {
         return environment[statement.name];
     }
     else if (statement instanceof lisb.CALL) {
-        return predefinedFunctions[statement.func.name](statement.args);
+        var func = predefinedFunctions[statement.func.name];
+        if (func instanceof Function) {
+            var args = [];
+            for (var a = 0; a < statement.args.length; a++) {
+                args.push(evaluateStatement(statement.args[a], environment));
+            }
+            return func(args);
+        } 
+        else if (statement.func instanceof lisb.LAMBDA) {
+            console.log("Args: ", statement.args);
+            console.log("body: ", statement.func.body);
+            console.log("body[0]: ", statement.func.body[0]);
+            environment.a = statement.args[0];
+            environment.b = statement.args[1];
+            return evaluateStatement(statement.func.body[0], environment);
+        } 
+        else {
+            return predefinedFunctions['>'](statement.args);
+        }
     }
     else if (statement instanceof lisb.COND) {
         for (var i = 0; i < statement.clauses.length; i++) {
