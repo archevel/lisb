@@ -5,6 +5,7 @@ LISB stands for LISP InSide the Browser. It is a javascript implementation of a 
  - To enable evaluation of Lisb scripts loaded by script tags on webpages. 
  - Limited language features (symbols, strings, numbers, boolean literals, lambdas, let, function invokations, function/variable definitions)
  - Easy javascript interop. It should be simple to use e.g. jQuery from LISB code. It should also be simple to invoke a LISB function from JS code.
+ - Scripts must explicitly export functions/variables. 
 
 Future goals/ideas
  

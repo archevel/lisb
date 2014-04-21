@@ -116,11 +116,11 @@ conditional
     : PARENS_BEG IF predicate consequent PARENS_END
     { $$ = new lisb.COND([new lisb.CLAUSE($3, $4)]); }
     | PARENS_BEG IF predicate consequent alternative PARENS_END
-    { $$ = new lisb.COND([new lisb.CLAUSE($3, $4)], $5); }
+    { $$ = new lisb.COND([new lisb.CLAUSE($3, $4), new lisb.CLAUSE(true, $5)]); }
     | PARENS_BEG COND clauses clause  PARENS_END
     { $3.push($4); $$ = new lisb.COND($3); }
     | PARENS_BEG COND clauses PARENS_BEG ELSE expression PARENS_END PARENS_END
-    { $$ = new lisb.COND($3, $6); }
+    { $3.push(new lisb.CLAUSE(true, $6)); $$ = new lisb.COND($3); }
     ; 
 
 clauses

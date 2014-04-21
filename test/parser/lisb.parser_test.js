@@ -290,8 +290,8 @@ exports.parser = nodeunit.testCase({
             cond = ast[0];
 
         test.deepEqual(cond, new lisb.COND([ 
-                new lisb.CLAUSE(new lisb.ID('false'), new lisb.ID('a'))],
-                new lisb.ID('b')));
+                new lisb.CLAUSE(new lisb.ID('false'), new lisb.ID('a')),
+                new lisb.CLAUSE(true, new lisb.ID('b'))]));
 
         test.done();          
     },
@@ -336,8 +336,8 @@ exports.parser = nodeunit.testCase({
             cond = ast[0];
 
         test.deepEqual(cond, new lisb.COND([
-                new lisb.CLAUSE(new lisb.ID('false'), new lisb.ID('x'))],
-                new lisb.ID('y')));
+                new lisb.CLAUSE(new lisb.ID('false'), new lisb.ID('x')), 
+                new lisb.CLAUSE(true, new lisb.ID('y'))]));
 
         test.done();          
     },
@@ -346,7 +346,7 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("(cond (else  y))"),
             cond = ast[0];
 
-        test.deepEqual(cond, new lisb.COND([], new lisb.ID('y')));
+        test.deepEqual(cond, new lisb.COND([new lisb.CLAUSE(true,  new lisb.ID('y'))]));
 
         test.done();
     },

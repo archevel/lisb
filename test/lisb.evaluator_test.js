@@ -70,8 +70,15 @@ exports.evaluator = nodeunit.testCase({
         test.done();
     },
 
+    "definitions have 'undefined' as their value": function(test) {
+        var actual = lisb.evaluate("(define b 2)");
+        test.strictEqual(actual, undefined);
 
-    "set! can be used to alter the value of a previous definition": function(test) {
+        test.done();        
+    },
+
+
+    "assignments can be used to alter the value of a previous definition": function(test) {
 
         var actual = lisb.evaluate("(define a 1) (set! a 2) a");
         test.strictEqual(actual, 2);
@@ -79,10 +86,17 @@ exports.evaluator = nodeunit.testCase({
         test.done();
     },
 
-    "set! can not be used to define new variables": function(test) {
+    "assignments can not be used to define new variables": function(test) {
         test.throws(function() {
             lisb.evaluate("(set! a 2) a");
         });
+
+        test.done();
+    },
+
+    "assignments have 'undefined' as their value": function(test) {
+        var actual = lisb.evaluate("(define a 1) (set! a 2)");
+        test.strictEqual(actual, undefined);
 
         test.done();
     },
@@ -113,6 +127,106 @@ exports.evaluator = nodeunit.testCase({
 
     },
 
+    "evaluates if expressions": function(test) {
+        var actual = lisb.evaluate("(if #t 1)");
+        test.strictEqual(actual, 1);
+
+        actual = lisb.evaluate("(if #t 2)");
+        test.strictEqual(actual, 2);
+
+        actual = lisb.evaluate('(if #f 2 "alfonso")');
+        test.strictEqual(actual, "alfonso");
+
+        actual = lisb.evaluate("(if 'boll 2)");
+        test.strictEqual(actual, 2);
+
+        actual = lisb.evaluate('(if "boll" 3)');
+        test.strictEqual(actual, 3);
+
+        actual = lisb.evaluate('(if 0 4)');
+        test.strictEqual(actual, 4);
+
+        actual = lisb.evaluate('(if -1 5)');
+        test.strictEqual(actual, 5);
+
+                actual = lisb.evaluate('(if 9991 5 "some string")');
+        test.strictEqual(actual, 5);
+
+        test.done();        
+    },
+
+    "variables can be used in if expressions": function(test) {
+        var actual = lisb.evaluate('(define a #t) (if a 5)');
+        test.strictEqual(actual, 5);
+
+        actual = lisb.evaluate('(define a #f) (if a 5 6)');
+        test.strictEqual(actual, 6);
+
+        test.done();
+    },
+
+    "it's ok to use undefined variables if they are in branches that are not executed": function(test) {
+        var actual = lisb.evaluate('(define a #t) (if a "THIS SHOULD BE THE RESULT" an-undefined-and-unused-variable-that-wont-be-evaluated)');
+        test.strictEqual(actual, "THIS SHOULD BE THE RESULT");
+
+        test.done();
+    },
+
+    "if expressions evaluate their consequents":function(test) {
+        var actual = lisb.evaluate('(define a #t) (if #t a)');
+        test.strictEqual(actual, true);   
+
+        actual = lisb.evaluate('(define a #t) (if #f "a string" a)');
+        test.strictEqual(actual, true);   
+        test.done();
+    },
+
+    "cond expressions selects the correct branch": function(test) {
+        var actual = lisb.evaluate('(cond (#t "this branch is chosen"))');
+        test.strictEqual(actual, "this branch is chosen");   
+
+        actual = lisb.evaluate('(cond (#f "bah!") (#t "a value"))');
+        test.strictEqual(actual, "a value");   
+
+        actual = lisb.evaluate('(cond (#f "bah!") (#f "a value") (#t 1))');
+        test.strictEqual(actual, 1);   
+        
+        actual = lisb.evaluate('(cond (#f "bah!") (#t "middle branch") (#f 1))');
+        test.strictEqual(actual, "middle branch");   
+        
+        actual = lisb.evaluate('(cond \n    (#f "bah!")\n    (#f "middle branch")\n    (#f 1)\n    (else 99))');
+        test.strictEqual(actual, 99);   
+
+        test.done();
+    },
+
+    "evaluates calls to predefined functions": function(test) {
+        var actual = lisb.evaluate('(> 3 1)');
+        test.strictEqual(actual, true);
+
+        actual = lisb.evaluate('(> 1 3)');
+        test.strictEqual(actual, false);
+
+        actual = lisb.evaluate('(> 67 67)');
+        test.strictEqual(actual, false);
+
+        actual = lisb.evaluate('(< 12 67)');
+        test.strictEqual(actual, true);
+
+        actual = lisb.evaluate('(< 67 3)');
+        test.strictEqual(actual, false);
+
+        actual = lisb.evaluate('(< 67 67)');
+        test.strictEqual(actual, false);
+
+        actual = lisb.evaluate('(+ 25 25)');
+        test.strictEqual(actual, 50);
+
+        actual = lisb.evaluate('(+ -12 25)');
+        test.strictEqual(actual, 13);
+
+        test.done();
+    },
 
 });
 

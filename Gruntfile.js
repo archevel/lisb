@@ -40,6 +40,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-jshint');
 
   // Default task(s).
-  grunt.registerTask('default', [ 'shell:generateParser', 'nodeunit:all']);
+  grunt.registerTask('default', [ 'jshint', 'shell:generateParser', 'nodeunit:all']);
 
 };

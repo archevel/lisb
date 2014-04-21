@@ -19,7 +19,7 @@ lisb.SET = function(name, value) { this.name = name; this.value = value; };
 
 lisb.CALL = function(func, args) { this.func = func; this.args = args; };
 
-lisb.COND = function(clauses, elseConsequent) { this.clauses = clauses;  this.elseConsequent = elseConsequent; };
+lisb.COND = function(clauses) { this.clauses = clauses; };
 
 lisb.CLAUSE = function(predicate, consequent) { this.predicate = predicate; this.consequent = consequent; };
 
