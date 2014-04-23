@@ -30,6 +30,7 @@ var complex_names = [
             "-",
             "=",
             "%",
+            "_",
             // combinations
             "a2*",
             "--a",
@@ -453,15 +454,17 @@ exports.parser = nodeunit.testCase({
         test.done();
     },
 
-    // 'set! must reference a identifier end with expression':function(test) {
-    //     test.throws(function() {
-    //         lisb.parser.parse("(set!)")
-    //     });
+    'set! must reference a identifier and end with expression':function(test) {
+        test.throws(function() {
+            lisb.parser.parse("(set!)");
+        });
 
-    //     test.throws(function() {
-    //         lisb.parser.parse("(set!)")
-    //     });
-    // },
+        test.throws(function() {
+            lisb.parser.parse("(set! x )");
+        });
+
+        test.done();    
+    },
 
     "define can't be redefined (yet?!)": function(test) {
         // TODO: Consider if "keywords" should be allowed to be redefined
@@ -474,13 +477,6 @@ exports.parser = nodeunit.testCase({
         test.done();
     },
 
-    // "string before variable definition of string":function(test) {
-    //     var ast = lisb.parser.parse('"some string" (define x "another string")');
-
-    //     test.deepEqual(ast, ["some string", new lisb.DEF("x","another string")]);
-
-    //     test.done();
-    // }
     // TODO: Add more tests for let?
     //  - symbol lists
     //  - "complex" sample program, e.g. fibonacci

@@ -252,6 +252,77 @@ exports.evaluator = nodeunit.testCase({
         test.done();
     },
 
+    "defined functions with multiple statments in body will execute all statements": function(test) {
+
+        var actual = lisb.evaluate('(define (my-gt a b) (define z 99) (+ z a b)) (my-gt 2 4)');
+        test.strictEqual(actual, 105);        
+
+        test.done();
+    },
+
+    "an error occurs if value not found for parameter": function (test) {
+        
+        test.throws(function() {
+            lisb.evaluate('(define (x y z) 5) (x 99)');
+        }, function(e) {
+            return e instanceof Error && e.message === "Function 'x' requires 2 arguments, 1 found"; 
+
+        });
+
+        test.throws(function() {
+            lisb.evaluate('(define (x y z) 5) (x)');
+        }, function(e) {return e instanceof Error && e.message === "Function 'x' requires 2 arguments, 0 found"; });
+
+        test.throws(function() {
+            lisb.evaluate('(define (somenameyname y z) 5) (somenameyname)');
+        }, function(e) {return e instanceof Error && e.message === "Function 'somenameyname' requires 2 arguments, 0 found"; });
+
+        test.throws(function() {
+            lisb.evaluate('((lambda (y z) 5) 9 8 7)');
+        }, function(e) {
+            return e instanceof Error && e.message === "Lambda function requires 2 arguments, 3 found"; 
+        });
+
+        test.done();
+    },
+
+    "unbound identifiers yield an error when evaluated": function(test) {
+        test.throws(function() {
+            lisb.evaluate('x');
+        }, function(e) {
+            return e instanceof Error && e.message === "Identifier 'x' is not bound to a value"; 
+        });
+        test.throws(function() {
+            lisb.evaluate('aina');
+        }, function(e) {
+            return e instanceof Error && e.message === "Identifier 'aina' is not bound to a value"; 
+        });
+        test.done();
+    },
+
+    "local definitions do not leak to outer scope": function(test) {
+        test.throws(function() {
+            lisb.evaluate('(define (z) (define x 3) 5) (z) x');
+        }, function(e) {
+            return e instanceof Error && e.message === "Identifier 'x' is not bound to a value"; 
+        });
+        test.done();
+    },
+
+    "local definitions shadows outer definitions": function(test) {
+        var actual = lisb.evaluate('(define a-var "Upp trälar uti alla stater!") ((lambda () (define a-var 3) a-var))');
+
+        test.strictEqual(actual, 3);
+        test.done();
+    },
+
+    "outer definitions are not overwritten by local definitions in the outer scope": function(test) {
+        var actual = lisb.evaluate('(define a-var "Som hungern bojor lagt uppå") ((lambda () (define a-var 3) a-var)) a-var');
+
+        test.strictEqual(actual, "Som hungern bojor lagt uppå");
+        test.done();
+    },
+
     "lambda functions can be called": function(test) {
         var actual = lisb.evaluate('((lambda (a b) (> a b)) 3 4)');
         test.strictEqual(actual, false);
@@ -275,6 +346,10 @@ exports.evaluator = nodeunit.testCase({
 
         test.done();
     },
+
+
+    // TODO: Add line numbers and column to error messages
+    // TODO: Add begin expression
 
 });
 

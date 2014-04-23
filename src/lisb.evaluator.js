@@ -62,7 +62,7 @@ function value(valuable) {
 }
 
 function body(func) {
-    return func.body[0];
+    return func.body;
 }
 
 function params(func) {
@@ -78,7 +78,20 @@ function define(statement, environment) {
 }
 
 function lookup_variable(statement, environment) {
-    return environment[name(statement)];
+    var value = environment[name(statement)];
+    if (value === undefined) {
+        throw Error("Identifier '" + name(statement) + "' is not bound to a value");
+    }
+
+    return value;
+}
+
+function copy_environment(environment) {
+    var new_environment = {};
+    for (var prop in environment) {
+        new_environment[prop] = environment[prop];
+    }
+    return new_environment;
 }
 
 function make_call(statement, environment) {
@@ -97,10 +110,29 @@ function make_call(statement, environment) {
     else if (is_lambda(func)) {
         var parameters = params(func);
         var argmnts2 = args(statement);
-        for (var p = 0; p < parameters.length; p++) {
-            environment[name(parameters[p])] = evaluateStatement(argmnts2[p], environment);
+
+        if (parameters.length !== argmnts2.length) {
+            var funcName = name(statement.func) ? "Function '" + name(statement.func) + "'" : "Lambda function";
+            throw new Error(funcName + " requires " + parameters.length + " arguments, " + argmnts2.length + " found");
         }
-        return evaluateStatement(body(func), environment);
+
+        var new_environment = copy_environment(environment);
+        for (var p = 0; p < parameters.length; p++) {
+            var val = evaluateStatement(argmnts2[p], environment);
+
+            new_environment[name(parameters[p])] = val;
+        }
+
+        var function_body = body(func);
+        var result = null;
+        for (var b = 0; b < function_body.length; b++) {
+            result = evaluateStatement(function_body[b], new_environment);
+        }
+
+        return result;
+    } else {
+        // TODO: How to write test for this? It should never happen...
+        throw new Error("Statement '" + statement + "' was called, but is neither a predefined functions or currently defined");
     }
 }
 

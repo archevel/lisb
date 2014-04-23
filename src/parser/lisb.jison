@@ -10,7 +10,7 @@
 "else"                                                          return 'ELSE'
 "lambda"                                                        return 'LAMBDA'
 "let"                                                           return 'LET'
-("-"(?!\d+)|[a-zA-Z=*+/<>!\?\$\^~¤§&\\|%])[a-zA-Z0-9=*+/<>!\?\-$\^~¤§&\\|%]*    return 'IDENTIFIER'
+("-"(?!\d+)|[a-zA-Z=*+/<>!\?\$\^~¤§&\\|%_])[a-zA-Z0-9=*+/<>!\?\-$\^~¤§&\\|%_]*    return 'IDENTIFIER'
 "-"?[0-9]+("."[0-9]+)?                                          return 'NUMBER'
 "\""([\\]["]|.)*?"\""                                                      return 'STRING' 
 "("                                                             return 'PARENS_BEG'
