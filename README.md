@@ -12,3 +12,16 @@ Future goals/ideas
  - Replace interpreter w/ Racket embedded as plugin to Firefox/Chrome.
  - Debugging using existing developer tools
  
+
+## GETTING STARTED
+In order to build and work with LISB you need to install [Node](https://github.com/joyent/node). Once that is setup, clone this repo and run:
+
+```
+$ npm install
+```
+
+The test suite should now run:
+
+```
+$ grunt
+```
