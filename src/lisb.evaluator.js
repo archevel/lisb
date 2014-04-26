@@ -73,12 +73,34 @@ function args(call) {
     return call.args;
 }
 
+function get(id, environment) {
+    for(var i = environment.length - 1; i >= 0; i--) {
+        var variable = environment[i][id];
+        if(variable) {
+            return value(variable);
+        }
+    }
+    return undefined;
+}
+
+function set(id, val, environment) {
+    var variable_undefined = true;
+    for(var i = environment.length - 1; i >= 0 && variable_undefined; i--) {
+        var variable = environment[i][id];
+        if(variable) {
+            variable.value = val;
+            variable_undefined = false;
+        }
+    }
+    environment[environment.length - 1][id] = { value: val };
+}
+
 function define(statement, environment) {
-    environment[name(statement)] = evaluateStatement(value(statement), environment);
+    environment[environment.length - 1][name(statement)] = { value: evaluateStatement(value(statement), environment) };
 }
 
 function lookup_variable(statement, environment) {
-    var value = environment[name(statement)];
+    var value = get(name(statement), environment);
     if (value === undefined) {
         throw Error("Identifier '" + name(statement) + "' is not bound to a value");
     }
@@ -86,16 +108,22 @@ function lookup_variable(statement, environment) {
     return value;
 }
 
+function create_frame() {
+    return {};
+}
+
 function copy_environment(environment) {
-    var new_environment = {};
-    for (var prop in environment) {
-        new_environment[prop] = environment[prop];
+    var new_environment = [];
+    for (var i = 0; i < environment.length; i++) {
+        new_environment.push(environment[i]);
     }
     return new_environment;
 }
 
 function make_call(statement, environment) {
-    var func = environment[name(statement.func)] || predefinedFunctions[name(statement.func)] || statement.func;
+    var func = get(name(statement.func), environment) || 
+        predefinedFunctions[name(statement.func)] || 
+        evaluateStatement(statement.func, environment);
 
     if (is_function(func)) {
         var unevaluated_args = args(statement);
@@ -116,21 +144,23 @@ function make_call(statement, environment) {
             throw new Error(funcName + " requires " + parameters.length + " arguments, " + argmnts2.length + " found");
         }
 
-        var new_environment = copy_environment(environment);
+        var frame = create_frame();
         for (var p = 0; p < parameters.length; p++) {
-            var val = evaluateStatement(argmnts2[p], environment);
-
-            new_environment[name(parameters[p])] = val;
+            frame[name(parameters[p])] = {value: evaluateStatement(argmnts2[p], environment)};
         }
-
+        
+        func.environment.push(frame);
         var function_body = body(func);
         var result = null;
         for (var b = 0; b < function_body.length; b++) {
-            result = evaluateStatement(function_body[b], new_environment);
+            result = evaluateStatement(function_body[b], func.environment);
         }
 
+        func.environment.pop();
+
         return result;
-    } else {
+    }
+    else {
         // TODO: How to write test for this? It should never happen...
         throw new Error("Statement '" + statement + "' was called, but is neither a predefined functions or currently defined");
     }
@@ -146,11 +176,11 @@ function eval_cond(statement, environment) {
 }
 
 function assign_variable(statement, environment) {
-    if (environment[name(statement)] === undefined) {
+    if (get(name(statement), environment) === undefined) {
         throw new LisbError("No definition found for: " + name(statement));
     }
 
-    environment[name(statement)] = evaluateStatement(value(statement), environment);
+    set(name(statement), evaluateStatement(value(statement), environment), environment);
 }
 
 // TODO: Refactor if-else blocks into separate functions that get registered
@@ -169,18 +199,23 @@ function evaluateStatement(statement, environment) {
     else if (is_cond(statement)) {
         return eval_cond(statement, environment);
     }
-    else if(is_assignment(statement)) {
+    else if (is_assignment(statement)) {
         assign_variable(statement, environment);
     } 
+    else if (is_lambda(statement)) {
+        statement.environment = copy_environment(environment);
+        
+        return statement;
+    }
     else { // Self evaluating expression...
         return statement;
     }
 }
 
 function parseAndEvaluate(statments) {
-    
+
     var ast = lisb.parser.parse(statments),
-        environment = {},
+        environment = [create_frame()],
         result = null;
 
     for(var i = 0; i < ast.length; i++) {
