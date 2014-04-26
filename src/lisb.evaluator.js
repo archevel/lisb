@@ -109,8 +109,18 @@ function lookup_variable(statement, environment) {
     return value;
 }
 
-function create_frame() {
+function create_empty_frame() {
     return {};
+}
+
+function create_frame(parameters, argmnts, environment) {
+    var frame = create_empty_frame();
+
+    for (var i = 0; i < parameters.length; i++) {
+        frame[name(parameters[i])] = {value: evaluateStatement(argmnts[i], environment)};
+    }
+
+    return frame;
 }
 
 function copy_environment(environment) {
@@ -121,48 +131,75 @@ function copy_environment(environment) {
     return new_environment;
 }
 
-function make_call(statement, environment) {
-    var func = get(name(statement.func), environment) || 
+function call_primitive_func(func, statement, environment) {
+    var unevaluated_args = args(statement);
+    var evaluated_args = [];
+    
+    for (var i = 0; i < unevaluated_args.length; i++) {
+        evaluated_args.push(evaluateStatement(unevaluated_args[i], environment));
+    }
+
+    return func(evaluated_args);
+}
+
+function check_arguments (statement, parameters, argmnts) {
+    if (parameters.length !== argmnts.length) {
+        var funcName = name(statement.func) ? "Function '" + name(statement.func) + "'" : "Lambda function";
+        throw new Error(funcName + " requires " + parameters.length + " arguments, " + argmnts.length + " found");
+    }
+}
+
+function evaluate_body(func) {
+    var function_body = body(func);
+    var result = null;
+    for (var i = 0; i < function_body.length; i++) {
+        result = evaluateStatement(function_body[i], func.environment);
+    }
+    return result;
+}
+
+function call_composite_func(func, statement, environment) {
+    var parameters = params(func);
+    var argmnts = args(statement);
+
+    check_arguments(statement, parameters, argmnts);
+
+    var frame = create_frame(parameters, argmnts, environment);
+    
+    func.environment.push(frame);
+    
+    var result = evaluate_body(func);
+
+    func.environment.pop();
+
+    return result;
+}
+
+function get_func(statement, environment) {
+    return get(name(statement.func), environment) || 
         predefinedFunctions[name(statement.func)] || 
         evaluateStatement(statement.func, environment);
+}
 
+function make_call(statement, environment) {
+    var func = get_func(statement, environment);
+
+    // TODO: Should call_primitive_func and call_composite_func
+    // take the statement as an argument? 
+    // call_composite_func need's the statement to extract the
+    // name of the functions if there is an error in the arguments check.
+    // If this was not the case 'statement' could be replaced by 'args(statement)'
+    // which is what the statement is used for inside these funcions. hmmm...
     if (is_function(func)) {
-        var unevaluated_args = args(statement);
-        var argmnts = [];
-        
-        for (var a = 0; a < unevaluated_args.length; a++) {
-            argmnts.push(evaluateStatement(unevaluated_args[a], environment));
-        }
-
-        return func(argmnts);
+        return call_primitive_func(func, statement, environment);
     } 
     else if (is_lambda(func)) {
-        var parameters = params(func);
-        var argmnts2 = args(statement);
-
-        if (parameters.length !== argmnts2.length) {
-            var funcName = name(statement.func) ? "Function '" + name(statement.func) + "'" : "Lambda function";
-            throw new Error(funcName + " requires " + parameters.length + " arguments, " + argmnts2.length + " found");
-        }
-
-        var frame = create_frame();
-        for (var p = 0; p < parameters.length; p++) {
-            frame[name(parameters[p])] = {value: evaluateStatement(argmnts2[p], environment)};
-        }
-        
-        func.environment.push(frame);
-        var function_body = body(func);
-        var result = null;
-        for (var b = 0; b < function_body.length; b++) {
-            result = evaluateStatement(function_body[b], func.environment);
-        }
-
-        func.environment.pop();
-
-        return result;
+        return call_composite_func(func, statement, environment);
     }
     else {
-        // TODO: How to write test for this? It should never happen...
+        // TODO: How to write test for this? It should never happen... 
+        // Remove this and just assume that if 'is_function' is false
+        // then it func is a lamda?
         throw new Error("Statement '" + statement + "' was called, but is neither a predefined functions or currently defined");
     }
 }
@@ -208,7 +245,7 @@ function evaluateStatement(statement, environment) {
 function parseAndEvaluate(statments) {
 
     var ast = lisb.parser.parse(statments),
-        environment = [create_frame()],
+        environment = [create_empty_frame()],
         result = null;
 
     for(var i = 0; i < ast.length; i++) {
