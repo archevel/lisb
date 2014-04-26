@@ -73,30 +73,31 @@ function args(call) {
     return call.args;
 }
 
-function get(id, environment) {
+function find(id, environment) {
     for(var i = environment.length - 1; i >= 0; i--) {
         var variable = environment[i][id];
         if(variable) {
-            return value(variable);
+            return variable;
         }
     }
-    return undefined;
+    return {value:undefined};
 }
 
-function set(id, val, environment) {
-    var variable_undefined = true;
-    for(var i = environment.length - 1; i >= 0 && variable_undefined; i--) {
-        var variable = environment[i][id];
-        if(variable) {
-            variable.value = val;
-            variable_undefined = false;
-        }
-    }
-    environment[environment.length - 1][id] = { value: val };
+function get(id, environment) {
+    return value(find(id, environment));
 }
 
 function define(statement, environment) {
     environment[environment.length - 1][name(statement)] = { value: evaluateStatement(value(statement), environment) };
+}
+
+function assign_variable(statement, environment) {
+    var variable = find(name(statement), environment);
+    if (value(variable) === undefined) {
+        throw new LisbError("No definition found for: " + name(statement));
+    }
+
+    variable.value = evaluateStatement(value(statement), environment);
 }
 
 function lookup_variable(statement, environment) {
@@ -173,14 +174,6 @@ function eval_cond(statement, environment) {
             return evaluateStatement(clause.consequent, environment);
         }
     }
-}
-
-function assign_variable(statement, environment) {
-    if (get(name(statement), environment) === undefined) {
-        throw new LisbError("No definition found for: " + name(statement));
-    }
-
-    set(name(statement), evaluateStatement(value(statement), environment), environment);
 }
 
 // TODO: Refactor if-else blocks into separate functions that get registered
