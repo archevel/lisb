@@ -53,6 +53,10 @@ function is_assignment(statement) {
     return statement instanceof lisb.SET;
 }
 
+function is_symbol(statement) {
+    return statement instanceof lisb.SYMB;
+}
+
 function name(id) {
     return id.name;
 }
@@ -180,6 +184,37 @@ function call_composite_func(func, statement, environment) {
     return result;
 }
 
+function check_object_arguments(argmnts, environment) {
+    if (argmnts.length < 1 || argmnts.length > 2) {
+        throw new Error("javascript objects only takes 1 or 2 arguments and " + argmnts.length + " arguments was given.");
+    }
+
+    var key = evaluateStatement(argmnts[0], environment);
+
+    if (is_symbol(key)) {
+        key = name(key);
+    }
+    else if (typeof key !== "string") {
+        throw new Error("Only strings and symbols can be used as keys to access javascript object values");
+    }
+
+    return key;
+}
+
+function call_to_object(obj, statement, environment) {
+    var argmnts = args(statement);
+
+    var key = check_object_arguments(argmnts, environment);
+
+    if (argmnts.length === 1) {
+        return obj[key];
+    }
+
+    var value = evaluateStatement(argmnts[1], environment);
+    obj[key] = value;
+    return value;
+}
+
 function get_func(statement, environment) {
     return get(name(statement.func), environment) || 
         predefinedFunctions[name(statement.func)] || 
@@ -201,10 +236,13 @@ function make_call(statement, environment) {
     else if (is_lambda(func)) {
         return call_composite_func(func, statement, environment);
     }
+    else if (func instanceof Object) {
+        return call_to_object(func, statement, environment);
+    }
     else {
         // TODO: How to write test for this? It should never happen... 
-        // Remove this and just assume that if 'is_function' is false
-        // then it func is a lamda?
+        // Remove this and just assume that if all if-else-if's are false 
+        // then it func is an Object?
         throw new Error("Statement '" + statement + "' was called, but is neither a predefined functions or currently defined");
     }
 }

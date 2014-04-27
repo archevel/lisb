@@ -382,6 +382,8 @@ exports.evaluator = nodeunit.testCase({
         var actual = lisb.evaluate("Foo");
 
         test.strictEqual(actual, 9000);
+        
+        delete global.Foo;
         test.done();
     },
 
@@ -390,29 +392,143 @@ exports.evaluator = nodeunit.testCase({
         test.throws(function() {
             lisb.evaluate("(set! Foo 1)");
         });
-
         test.strictEqual(global.Foo, 9000);
+        
+        delete global.Foo;
         test.done();
     },
-    /*
+    
 
     "javascript objects' properties can be accessed with symbols and strings": function(test) {
-        global.myObject = { foo: "hello"};
-        var actual = lisb.evaluate("(myObject 'foo)");
+        var objectKeys = ["foo", "--123!!!bar", '?'];
+        for(var i = 0; i < objectKeys.length; i++) {
+            for (var testValue in simpleTestValues) {
+                
+                global.myObject = {};
+                var objectKey = objectKeys[i];
+                var expected = simpleTestValues[testValue];
+                global.myObject[objectKey] = expected;
+                var actual = lisb.evaluate("(myObject '" + objectKey +")");
+                test.strictEqual(actual, expected);
 
-        test.strictEqual(actual, "hello");
+                actual = lisb.evaluate('(myObject "' + objectKey + '")');
+                test.strictEqual(actual, expected);
+                
+            }
+        }
+
+        delete global.myObject;
         test.done();
-
     },
 
     "javascript objects' properties can be assigned to with symbols and strings": function(test) {
-        global.myObject = {};
-        lisb.evaluate("(myObject 'foo 1)");
+        var objectKeys = ["biz", "_", 'hello?'];
+        for(var i = 0; i < objectKeys.length; i++) {
+            for (var testValue in simpleTestValues) {
+                
+                global.myObject = {};
+                var objectKey = objectKeys[i];
+                var expected = simpleTestValues[testValue];
 
-        test.strictEqual(global.myObject.foo, 1);
+                var actual = lisb.evaluate("(myObject '" + objectKey +" " + testValue + ")");
+                test.deepEqual(global.myObject[objectKey], expected);
+
+                actual = lisb.evaluate('(myObject "' + objectKey + '")');
+                test.deepEqual(global.myObject[objectKey], expected);
+                
+            }
+        }
+
+        delete global.myObject;
         test.done();
     },
 
+    "assignment to javascript object yields the value of the assigned expression": function(test) {
+        global.myObject = {};
+        var actual = lisb.evaluate("(myObject 'foo 1)");
+        test.strictEqual(actual, 1);
+        
+        actual = lisb.evaluate("(myObject 'foo 'some_val)");
+        test.deepEqual(actual, new lisb.SYMB('some_val'));
+
+        delete global.myObject;
+        test.done();
+    },
+
+    "for javascript objects values and keys are evaluated": function(test) {
+
+        global.myObject = {};
+        lisb.evaluate("(myObject 'foo (+ 1 2))");
+        test.strictEqual(global.myObject.foo, 3);
+
+        global.myObject = {};
+        lisb.evaluate("(myObject ((lambda (x) x) 'floppety) (+ 1 2))");
+        test.strictEqual(global.myObject.floppety, 3);
+
+        test.done();
+    },
+
+
+    "numbers can not be used as keys to objects": function(test) {
+        global.Biz = {'1': "some value"};
+
+        test.throws(function() {
+            lisb.evaluate("(Biz 1)");
+        }, function(e) {
+            return e.message === "Only strings and symbols can be used as keys to access javascript object values";
+        });
+
+        test.throws(function() {
+            lisb.evaluate("(Biz 1 3)");
+        }, function(e) {
+            return e.message === "Only strings and symbols can be used as keys to access javascript object values";
+        });
+        
+        delete global.Biz;
+        test.done();
+    },
+
+    "lambdas can not be used as keys to objects": function(test) {
+        global.Biz = {};
+        var lambda = lisb.evaluate("(lambda (x) x)");
+        global.Biz[lambda] = "a val";
+
+        test.throws(function() {
+            lisb.evaluate("(Biz (lambda (x) x))");
+        }, function(e) {
+            return e.message === "Only strings and symbols can be used as keys to access javascript object values";
+        });
+
+        test.throws(function() {
+            lisb.evaluate("(Biz (lambda (x) x) 33)");
+        }, function(e) {
+            return e.message === "Only strings and symbols can be used as keys to access javascript object values";
+        });
+
+        delete global.Biz;
+        test.done();
+    },
+
+    "call to a javascript object require one to two arguments": function(test) {
+        global.Hipster = {};
+
+        test.throws(function() {
+            lisb.evaluate("(Hipster)");
+        }, function(e) {
+            return e.message === "javascript objects only takes 1 or 2 arguments and 0 arguments was given.";
+        });
+
+        test.throws(function() {
+            lisb.evaluate("(Hipster 'fiz 1 2)");
+        }, function(e) {
+            return e.message === "javascript objects only takes 1 or 2 arguments and 3 arguments was given.";
+        });
+        delete global.Hipster;
+        test.done();
+
+    },
+
+    /*
     "javascript functions can be called":function(test) {
         global.myFunc = function() { return 3; };
         var actual = lisb.evaluate("(myFunc)");
