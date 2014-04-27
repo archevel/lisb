@@ -265,22 +265,21 @@ exports.evaluator = nodeunit.testCase({
         test.throws(function() {
             lisb.evaluate('(define (x y z) 5) (x 99)');
         }, function(e) {
-            return e instanceof Error && e.message === "Function 'x' requires 2 arguments, 1 found"; 
-
+            return e instanceof Error && e.message === "Function requires 2 arguments, 1 found"; 
         });
 
         test.throws(function() {
             lisb.evaluate('(define (x y z) 5) (x)');
-        }, function(e) {return e instanceof Error && e.message === "Function 'x' requires 2 arguments, 0 found"; });
+        }, function(e) {return e instanceof Error && e.message === "Function requires 2 arguments, 0 found"; });
 
         test.throws(function() {
             lisb.evaluate('(define (somenameyname y z) 5) (somenameyname)');
-        }, function(e) {return e instanceof Error && e.message === "Function 'somenameyname' requires 2 arguments, 0 found"; });
+        }, function(e) {return e instanceof Error && e.message === "Function requires 2 arguments, 0 found"; });
 
         test.throws(function() {
             lisb.evaluate('((lambda (y z) 5) 9 8 7)');
         }, function(e) {
-            return e instanceof Error && e.message === "Lambda function requires 2 arguments, 3 found"; 
+            return e instanceof Error && e.message === "Function requires 2 arguments, 3 found"; 
         });
 
         test.done();
@@ -528,16 +527,26 @@ exports.evaluator = nodeunit.testCase({
 
     },
 
-    /*
     "javascript functions can be called":function(test) {
         global.myFunc = function() { return 3; };
         var actual = lisb.evaluate("(myFunc)");
 
         test.strictEqual(actual, 3);
+
+        test.strictEqual(lisb.evaluate('(eval "1 + 2")'), 3); // Tihi! :)
+
         test.done();
     },
 
-    */
+    "vanilla js can call a function defined in LISB":function(test) {
+
+        var lambda = lisb.evaluate("(define x 100) (lambda (y) (+ x y) )");
+        test.strictEqual(lambda(1), 101);
+        test.strictEqual(lambda(2), 102);
+        test.strictEqual(lambda(100.2), 200.2);
+
+        test.done();
+    },
     // TODO: Add line numbers and column to error messages
     // TODO: Add begin expression
 

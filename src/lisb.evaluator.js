@@ -122,11 +122,11 @@ function create_empty_frame() {
     return {};
 }
 
-function create_frame(parameters, argmnts, environment) {
+function create_frame(parameters, argmnts) {
     var frame = create_empty_frame();
 
     for (var i = 0; i < parameters.length; i++) {
-        frame[name(parameters[i])] = {value: evaluateStatement(argmnts[i], environment)};
+        frame[name(parameters[i])] = {value: argmnts[i]};
     }
 
     return frame;
@@ -151,37 +151,32 @@ function call_primitive_func(func, statement, environment) {
     return func(evaluated_args);
 }
 
-function check_arguments (statement, parameters, argmnts) {
+function check_arguments(parameters, argmnts) {
     if (parameters.length !== argmnts.length) {
-        var funcName = name(statement.func) ? "Function '" + name(statement.func) + "'" : "Lambda function";
-        throw new Error(funcName + " requires " + parameters.length + " arguments, " + argmnts.length + " found");
+        throw new Error("Function requires " + parameters.length + " arguments, " + argmnts.length + " found");
     }
 }
 
-function evaluate_body(func) {
+function evaluate_body(func, environment) {
     var function_body = body(func);
     var result = null;
     for (var i = 0; i < function_body.length; i++) {
-        result = evaluateStatement(function_body[i], func.environment);
+        result = evaluateStatement(function_body[i], environment);
     }
     return result;
 }
 
 function call_composite_func(func, statement, environment) {
-    var parameters = params(func);
+
     var argmnts = args(statement);
+    var evaluated_args = [];
 
-    check_arguments(statement, parameters, argmnts);
+    for (var i = 0; i < argmnts.length; i++) {
+        evaluated_args.push(evaluateStatement(argmnts[i], environment));
+    }
 
-    var frame = create_frame(parameters, argmnts, environment);
-    
-    func.environment.push(frame);
-    
-    var result = evaluate_body(func);
 
-    func.environment.pop();
-
-    return result;
+    return func.apply(func, evaluated_args);
 }
 
 function check_object_arguments(argmnts, environment) {
@@ -230,10 +225,11 @@ function make_call(statement, environment) {
     // name of the functions if there is an error in the arguments check.
     // If this was not the case 'statement' could be replaced by 'args(statement)'
     // which is what the statement is used for inside these funcions. hmmm...
-    if (is_function(func)) {
+    //if (is_function(func)) {
+    if (predefinedFunctions[name(statement.func)]) {
         return call_primitive_func(func, statement, environment);
     } 
-    else if (is_lambda(func)) {
+    else if (is_function(func)) {
         return call_composite_func(func, statement, environment);
     }
     else if (func instanceof Object) {
@@ -276,9 +272,22 @@ function evaluateStatement(statement, environment) {
         assign_variable(statement, environment);
     } 
     else if (is_lambda(statement)) {
-        statement.environment = copy_environment(environment);
-        
-        return statement;
+        var lambda_environment = copy_environment(environment);
+        return function() {
+            // var argmnts = args(call_stmt);
+            var parameters = params(statement);
+            
+            check_arguments(parameters, arguments);
+
+            var frame = create_frame(parameters, arguments);
+            
+            lambda_environment.push(frame);
+            var result = evaluate_body(statement, lambda_environment);
+
+            lambda_environment.pop();
+            
+            return result;
+        };
     }
     else { // Self evaluating expression...
         return statement;
