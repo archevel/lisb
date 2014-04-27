@@ -375,7 +375,7 @@ exports.evaluator = nodeunit.testCase({
         test.done();
     },
 
-    /*
+    
     "if variable is not found in environment, the javascript global scope should be checked": function(test) {
         global.Foo = 9000;
 
@@ -384,6 +384,17 @@ exports.evaluator = nodeunit.testCase({
         test.strictEqual(actual, 9000);
         test.done();
     },
+
+    "variables defined in the global scope can't be assigned values with set!": function(test) {
+        global.Foo = 9000;
+        test.throws(function() {
+            lisb.evaluate("(set! Foo 1)");
+        });
+
+        test.strictEqual(global.Foo, 9000);
+        test.done();
+    },
+    /*
 
     "javascript objects' properties can be accessed with symbols and strings": function(test) {
         global.myObject = { foo: "hello"};

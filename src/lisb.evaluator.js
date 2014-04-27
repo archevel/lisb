@@ -84,7 +84,12 @@ function find(id, environment) {
 }
 
 function get(id, environment) {
-    return value(find(id, environment));
+    var val = value(find(id, environment));
+    if (val === undefined) {
+        return global[id];
+    }
+
+    return val;
 }
 
 function define(statement, environment) {
