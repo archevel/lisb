@@ -151,6 +151,13 @@ alternative
     { $$ = $1; }
     ;
 
+values
+    :
+    { $$ = lisb.NIL; }
+    | value values
+    { $$ = new lisb.PAIR($1, $2);}
+    ;
+
 value 
     : NUMBER
     { $$ = lisb.NUMBER(yytext); }
@@ -166,6 +173,8 @@ value
     { $$ = lisb.NUMBER(yytext); }
     | PARENS_BEG LAMBDA PARENS_BEG function_params PARENS_END statements expression PARENS_END
     { $6.push($7); $$ = new lisb.LAMBDA($4, $6); }
+    | SYMBOLSTART PARENS_BEG values PARENS_END
+    { $$ = $3; }
     ;
 
 boolean

@@ -547,6 +547,7 @@ exports.evaluator = nodeunit.testCase({
 
         test.done();
     },
+    // TODO: Add symbol expressions...
     // TODO: Add line numbers and column to error messages
     // TODO: Add begin expression
 

@@ -11,6 +11,14 @@ lisb.BOOLEAN = Boolean;
 
 lisb.SYMB = function(name) { this.name = name; };
 
+lisb.PAIR = function(head,tail) {
+     this.head = head; 
+     this.tail = tail; 
+};
+lisb.NIL = new lisb.PAIR();
+
+// = function(values) { this.values = values; };
+
 lisb.LAMBDA = function(params, body) { this.params = params; this.body = body; };
 
 lisb.DEF = function(name, value) { this.name = name; this.value = value; };

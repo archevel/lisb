@@ -477,6 +477,69 @@ exports.parser = nodeunit.testCase({
         test.done();
     },
 
+    "symbol expressions can be empty": function(test) {
+        var ast = lisb.parser.parse("'()"),
+            nil = ast[0];
+        
+        test.deepEqual(nil, lisb.NIL);
+
+        test.done();
+    },
+
+    "symbol expressions can contain numbers": function(test) {
+        var ast = lisb.parser.parse("'(999.999)"),
+            pair = ast[0];
+
+        test.deepEqual(pair, new lisb.PAIR(999.999, lisb.NIL));
+
+        ast = lisb.parser.parse("'(1.0 -3.5 4)");
+        pair = ast[0];
+
+        test.deepEqual(pair, new lisb.PAIR(1.0, new lisb.PAIR(-3.5, new lisb.PAIR(4, lisb.NIL))));        
+
+        test.done();
+    },
+
+    "symbol expressions can contain symbols and strings": function(test) {
+        var ast = lisb.parser.parse("'(\"foo\" \"bar\")"),
+            pair = ast[0];
+
+        test.deepEqual(pair, new lisb.PAIR("foo", new lisb.PAIR("bar", lisb.NIL)));
+
+        ast = lisb.parser.parse("'('biz 'baz)");
+        pair = ast[0];
+
+        test.deepEqual(pair, new lisb.PAIR(new lisb.SYMB("biz"), new lisb.PAIR(new lisb.SYMB("baz"), lisb.NIL)));
+
+        test.done();
+    },
+
+    "symbol expressions can contain identifiers": function(test) {
+        var ast = lisb.parser.parse("'(foo bar)"),
+            pair = ast[0];
+
+        test.deepEqual(pair, new lisb.PAIR(new lisb.ID("foo"), new lisb.PAIR(new lisb.ID("bar"), lisb.NIL)));
+
+        test.done();
+    },
+
+    "symbol expressions can contain keywords": function(test) {
+
+        var ast = lisb.parser.parse("'(define)"),
+            def = ast[0];
+        // TODO: The most elegant way to solve the above ought to be to change the parser
+        // so that it has no keywords. This means more logic in the evaluator to determine the expression,
+        // e.g. recognizing a parameter list.
+        // Other ways to fix this would be to let symbol expressions contain the specified keywords
+        // and just treat them differently here...
+        test.deepEqual(def, new lisb.PAIR(new lisb.ID("define"), lisb.NIL));
+
+        test.done();
+    },
+
+
+
+
     // TODO: Add more tests for let?
     //  - symbol lists
     //  - "complex" sample program, e.g. fibonacci
