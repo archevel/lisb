@@ -12,7 +12,7 @@ var simpleTestValues = {
     '1':1,
     '9123.3': 9123.3,
     '"a string"': "a string",
-    "'a-symbol": new lisb.SYMB("a-symbol"),
+    "'a-symbol": new lisb.Symb("a-symbol"),
     "#t": true,
     "#f": false
 };
@@ -448,7 +448,7 @@ exports.evaluator = nodeunit.testCase({
         test.strictEqual(actual, 1);
         
         actual = lisb.evaluate("(myObject 'foo 'some_val)");
-        test.deepEqual(actual, new lisb.SYMB('some_val'));
+        test.deepEqual(actual, new lisb.Symb('some_val'));
 
         delete global.myObject;
         test.done();

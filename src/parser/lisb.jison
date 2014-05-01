@@ -13,9 +13,10 @@
 ("-"(?!\d+)|[a-zA-Z=*+/<>!\?\$\^~¤§&\\|%_])[a-zA-Z0-9=*+/<>!\?\-$\^~¤§&\\|%_]*    return 'IDENTIFIER'
 "-"?[0-9]+("."[0-9]+)?                                          return 'NUMBER'
 "\""([\\]["]|.)*?"\""                                                      return 'STRING' 
-"("                                                             return 'PARENS_BEG'
-")"                                                             return 'PARENS_END'
-"'"                                                             return 'SYMBOLSTART'
+"("                                                             return 'LPAR'
+")"                                                             return 'RPAR'
+"'"([^\s\(\)]+)                                                   return 'SYMBOL'
+"'("                                                            return 'SEXPR'
 "#t"                                                            return 'TRUE'
 "#f"                                                            return 'FALSE'
 <<EOF>>                                                         return 'EOF'
@@ -49,33 +50,33 @@ statement
     ;
 
 assignment
-    : PARENS_BEG SET IDENTIFIER expression PARENS_END
-    { $$ = new lisb.SET($3, $4); }
+    : LPAR SET IDENTIFIER expression RPAR
+    { $$ = new lisb.Set($3, $4); }
     ;
 
 
 definition
-    : PARENS_BEG DEFINE IDENTIFIER expression PARENS_END
-    { $$ = new lisb.DEF($3, $4); }
-    | PARENS_BEG DEFINE function_def PARENS_END
-    { $$ =  new lisb.DEF($3['name'], $3['lambda']); }
+    : LPAR DEFINE IDENTIFIER expression RPAR
+    { $$ = new lisb.Def($3, $4); }
+    | LPAR DEFINE function_def RPAR
+    { $$ =  new lisb.Def($3['name'], $3['lambda']); }
     ;
 
 function_def
-    : PARENS_BEG IDENTIFIER function_params PARENS_END statements expression
-    { $5.push($6); $$ = { 'name': $2, 'lambda': new lisb.LAMBDA($3, $5) }; }
+    : LPAR IDENTIFIER function_params RPAR statements expression
+    { $5.push($6); $$ = { 'name': $2, 'lambda': new lisb.Lambda($3, $5) }; }
     ;
 
 function_params
     : 
     { $$ = []; }
     | function_params IDENTIFIER
-    { $$ = $1; $$.push(new lisb.ID($2)); }
+    { $$ = $1; $$.push(new lisb.Id($2)); }
     ;
 
 invocation
-    : PARENS_BEG expression invocation_args PARENS_END
-    { $$ = new lisb.CALL($2, $3); }
+    : LPAR expression invocation_args RPAR
+    { $$ = new lisb.Call($2, $3); }
     ;
 
 invocation_args
@@ -96,8 +97,8 @@ expression
     ;
 
 let_expr 
-    : PARENS_BEG LET PARENS_BEG params_args PARENS_END statements expression PARENS_END
-    { $6.push($7); $$ = new lisb.CALL(new lisb.LAMBDA($4.params, $6), $4.args ); }
+    : LPAR LET LPAR params_args RPAR statements expression RPAR
+    { $6.push($7); $$ = new lisb.Call(new lisb.Lambda($4.params, $6), $4.args ); }
     ;
 
 params_args
@@ -108,19 +109,19 @@ params_args
     ;
 
 param_arg
-    : PARENS_BEG IDENTIFIER expression PARENS_END
-    { $$ = { 'param': new lisb.ID($2), 'arg': $3 }; }
+    : LPAR IDENTIFIER expression RPAR
+    { $$ = { 'param': new lisb.Id($2), 'arg': $3 }; }
     ;
 
 conditional
-    : PARENS_BEG IF predicate consequent PARENS_END
-    { $$ = new lisb.COND([new lisb.CLAUSE($3, $4)]); }
-    | PARENS_BEG IF predicate consequent alternative PARENS_END
-    { $$ = new lisb.COND([new lisb.CLAUSE($3, $4), new lisb.CLAUSE(true, $5)]); }
-    | PARENS_BEG COND clauses clause  PARENS_END
-    { $3.push($4); $$ = new lisb.COND($3); }
-    | PARENS_BEG COND clauses PARENS_BEG ELSE expression PARENS_END PARENS_END
-    { $3.push(new lisb.CLAUSE(true, $6)); $$ = new lisb.COND($3); }
+    : LPAR IF predicate consequent RPAR
+    { $$ = new lisb.Cond([new lisb.Clause($3, $4)]); }
+    | LPAR IF predicate consequent alternative RPAR
+    { $$ = new lisb.Cond([new lisb.Clause($3, $4), new lisb.Clause(true, $5)]); }
+    | LPAR COND clauses clause  RPAR
+    { $3.push($4); $$ = new lisb.Cond($3); }
+    | LPAR COND clauses LPAR ELSE expression RPAR RPAR
+    { $3.push(new lisb.Clause(true, $6)); $$ = new lisb.Cond($3); }
     ; 
 
 clauses
@@ -131,8 +132,8 @@ clauses
     ;
 
 clause
-    : PARENS_BEG predicate consequent PARENS_END
-    { $$ = new lisb.CLAUSE( $2,  $3 ); }
+    : LPAR predicate consequent RPAR
+    { $$ = new lisb.Clause( $2,  $3 ); }
     ;
 
 
@@ -151,30 +152,20 @@ alternative
     { $$ = $1; }
     ;
 
-values
-    :
-    { $$ = lisb.NIL; }
-    | value values
-    { $$ = new lisb.PAIR($1, $2);}
-    ;
-
 value 
     : NUMBER
-    { $$ = lisb.NUMBER(yytext); }
+    { $$ = lisb.Number(yytext); }
     | IDENTIFIER
-    { $$ = new lisb.ID(yytext);; }
+    { $$ = new lisb.Id(yytext);; }
     | boolean
     { $$ = $1; }
     | STRING
-    { $$ = lisb.STRING(eval($1)); }
-    | SYMBOLSTART IDENTIFIER
-    { $$ = new lisb.SYMB($2); }
-    | SYMBOLSTART NUMBER
-    { $$ = lisb.NUMBER(yytext); }
-    | PARENS_BEG LAMBDA PARENS_BEG function_params PARENS_END statements expression PARENS_END
-    { $6.push($7); $$ = new lisb.LAMBDA($4, $6); }
-    | SYMBOLSTART PARENS_BEG values PARENS_END
-    { $$ = $3; }
+    { $$ = lisb.String(eval($1)); }
+    | symbol
+    | LPAR LAMBDA LPAR function_params RPAR statements expression RPAR
+    { $6.push($7); $$ = new lisb.Lambda($4, $6); }
+    | SEXPR sexprs RPAR
+    { $$ = $2; }
     ;
 
 boolean
@@ -182,4 +173,41 @@ boolean
     { $$ = true; }
     | FALSE
     { $$ = false; }
+    ;
+
+symbol
+    : SYMBOL
+    { var symb = $1.substr(1); var n = lisb.Number(symb);  $$ = n ? n : new lisb.Symb(symb); }
+    ;
+
+sexprs
+    :
+    { $$ = lisb.NIL; }
+    | sexpr sexprs
+    { $$ = new lisb.Pair($1, $2); }
+    ;
+
+sexpr
+    : IDENTIFIER
+    { $$ = new lisb.Id(yytext); }
+    | DEFINE
+    { $$ = new lisb.Id(yytext); }
+    | SET
+    { $$ = new lisb.Id(yytext); }
+    | COND
+    { $$ = new lisb.Id(yytext); }
+    | IF
+    { $$ = new lisb.Id(yytext); }
+    | ELSE
+    { $$ = new lisb.Id(yytext); }
+    | LAMBDA
+    { $$ = new lisb.Id(yytext); }
+    | LET
+    { $$ = new lisb.Id(yytext); }
+    | NUMBER
+    { $$ = lisb.Number(yytext); }
+    | STRING
+    { $$ = lisb.String(eval($1)); }
+    | symbol
+    | boolean
     ;

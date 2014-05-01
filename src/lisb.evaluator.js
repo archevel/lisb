@@ -26,15 +26,15 @@ var predefinedFunctions = {
 };
 
 function is_def(statement) {
-    return statement instanceof lisb.DEF;
+    return statement instanceof lisb.Def;
 }
 
 function is_id(statement) {
-    return statement instanceof lisb.ID;
+    return statement instanceof lisb.Id;
 }
 
 function is_call(statement) {
-    return statement instanceof lisb.CALL;
+    return statement instanceof lisb.Call;
 }
 
 function is_function(statement) {
@@ -42,19 +42,19 @@ function is_function(statement) {
 }
 
 function is_lambda(statement) {
-    return statement instanceof lisb.LAMBDA;
+    return statement instanceof lisb.Lambda;
 }
 
 function is_cond(statement) {
-    return statement instanceof lisb.COND;
+    return statement instanceof lisb.Cond;
 }
 
 function is_assignment(statement) {
-    return statement instanceof lisb.SET;
+    return statement instanceof lisb.Set;
 }
 
 function is_symbol(statement) {
-    return statement instanceof lisb.SYMB;
+    return statement instanceof lisb.Symb;
 }
 
 function get_name(id) {

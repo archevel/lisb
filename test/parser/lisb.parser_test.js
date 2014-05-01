@@ -72,7 +72,7 @@ exports.parser = nodeunit.testCase({
     'simple identifier': function(test) {
         var ast = lisb.parser.parse("a"),
             identifier = ast[0];
-        test.ok(identifier instanceof lisb.ID);
+        test.ok(identifier instanceof lisb.Id);
         test.strictEqual(identifier.name, 'a');
         test.done();
     },
@@ -82,7 +82,7 @@ exports.parser = nodeunit.testCase({
         for (var i = 0; i < complex_names.length; i++) {
             var ast = lisb.parser.parse(complex_names[i]),
                 identifier = ast[0];
-            test.ok(identifier instanceof lisb.ID);
+            test.ok(identifier instanceof lisb.Id);
             test.strictEqual(identifier.name, complex_names[i]);
         }
 
@@ -94,7 +94,7 @@ exports.parser = nodeunit.testCase({
             ast = lisb.parser.parse(long_combined_name),
             identifier = ast[0];
 
-        test.ok(identifier instanceof lisb.ID);
+        test.ok(identifier instanceof lisb.Id);
         test.strictEqual(identifier.name, long_combined_name);
 
         test.done();
@@ -114,7 +114,7 @@ exports.parser = nodeunit.testCase({
     'define variables': function(test) {
         var ast = lisb.parser.parse("(define x 2)"),
             def = ast[0];
-        test.ok(def instanceof lisb.DEF);
+        test.ok(def instanceof lisb.Def);
         test.strictEqual(def.name, 'x');
         test.ok(def.hasOwnProperty('value'));
         test.done();
@@ -128,17 +128,17 @@ exports.parser = nodeunit.testCase({
     'define function': function(test) {
         var ast = lisb.parser.parse("(define (x a) a)"),
             def = ast[0];
-        test.ok(def instanceof lisb.DEF);
+        test.ok(def instanceof lisb.Def);
         test.strictEqual(def.name, 'x');
-        test.deepEqual(def.value, new lisb.LAMBDA([new lisb.ID('a')], [new lisb.ID('a')]));
+        test.deepEqual(def.value, new lisb.Lambda([new lisb.Id('a')], [new lisb.Id('a')]));
         test.done();
     },
     'define multi-argument function': function(test) {
         var ast = lisb.parser.parse("(define (fun a b c d) a)"),
             def = ast[0];
-        test.ok(def instanceof lisb.DEF);
+        test.ok(def instanceof lisb.Def);
         test.strictEqual(def.name, 'fun');
-        test.deepEqual(def.value.params, [new lisb.ID('a'), new lisb.ID('b'), new lisb.ID('c'), new lisb.ID('d')]);
+        test.deepEqual(def.value.params, [new lisb.Id('a'), new lisb.Id('b'), new lisb.Id('c'), new lisb.Id('d')]);
         test.ok(def.value.hasOwnProperty('body'));
         test.done();
     },
@@ -155,9 +155,9 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("(define (fun a b c d) (+ a b c d 10))"),
             body = ast[0].value.body;
 
-        test.ok(body[0] instanceof lisb.CALL);
-        test.deepEqual(body[0].func, new lisb.ID('+'));
-        test.deepEqual(body[0].args, [new lisb.ID('a'), new lisb.ID('b'), new lisb.ID('c'), new lisb.ID('d'), 10 ]);
+        test.ok(body[0] instanceof lisb.Call);
+        test.deepEqual(body[0].func, new lisb.Id('+'));
+        test.deepEqual(body[0].args, [new lisb.Id('a'), new lisb.Id('b'), new lisb.Id('c'), new lisb.Id('d'), 10 ]);
 
         test.done();
 
@@ -167,7 +167,7 @@ exports.parser = nodeunit.testCase({
             body = ast[0].value.body;
 
         test.strictEqual(body.length, 3);
-        test.deepEqual(body[0], new lisb.DEF('d', 10));
+        test.deepEqual(body[0], new lisb.Def('d', 10));
 
         test.done();
     },
@@ -225,21 +225,21 @@ exports.parser = nodeunit.testCase({
                     ];
         for (var i = 0; i < validSymbols.length; i++) {
             var ast = lisb.parser.parse(validSymbols[i].input);
-            test.ok(ast[0] instanceof lisb.SYMB);
-            test.deepEqual(ast[0], new lisb.SYMB(validSymbols[i].output) );
+            test.ok(ast[0] instanceof lisb.Symb);
+            test.deepEqual(ast[0], new lisb.Symb(validSymbols[i].output) );
         }
         test.done();  
     },
 
     'invalid symbols throws parse error': function(test) {
         test.throws(function() {
-            lisb.parser.parse("';");
+            lisb.parser.parse("'(");
         });
         test.throws(function() {
-            lisb.parser.parse("''");
+            lisb.parser.parse("')");
         });
         test.throws(function() {
-            lisb.parser.parse("'.");
+            lisb.parser.parse("' ");
         });
         test.done();
     },
@@ -279,8 +279,8 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("(if true a)"),
             cond = ast[0];
 
-        test.deepEqual(cond, new lisb.COND([
-                    new lisb.CLAUSE(new lisb.ID('true'), new lisb.ID('a'))
+        test.deepEqual(cond, new lisb.Cond([
+                    new lisb.Clause(new lisb.Id('true'), new lisb.Id('a'))
                 ]));
 
         test.done();
@@ -290,9 +290,9 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("(if false a b)"),
             cond = ast[0];
 
-        test.deepEqual(cond, new lisb.COND([ 
-                new lisb.CLAUSE(new lisb.ID('false'), new lisb.ID('a')),
-                new lisb.CLAUSE(true, new lisb.ID('b'))]));
+        test.deepEqual(cond, new lisb.Cond([ 
+                new lisb.Clause(new lisb.Id('false'), new lisb.Id('a')),
+                new lisb.Clause(true, new lisb.Id('b'))]));
 
         test.done();          
     },
@@ -301,12 +301,12 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("(if (something o) a)"),
             cond = ast[0];
 
-        test.deepEqual(cond, new lisb.COND([
-                    new lisb.CLAUSE(
-                        new lisb.CALL(
-                            new lisb.ID('something'),
-                            [new lisb.ID('o')]), 
-                    new lisb.ID('a'))]));
+        test.deepEqual(cond, new lisb.Cond([
+                    new lisb.Clause(
+                        new lisb.Call(
+                            new lisb.Id('something'),
+                            [new lisb.Id('o')]), 
+                    new lisb.Id('a'))]));
 
         test.done();
     },
@@ -315,7 +315,7 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("(cond (false a))"),
             cond = ast[0];
 
-        test.deepEqual(cond, new lisb.COND([new lisb.CLAUSE(new lisb.ID('false'), new lisb.ID('a'))]));
+        test.deepEqual(cond, new lisb.Cond([new lisb.Clause(new lisb.Id('false'), new lisb.Id('a'))]));
 
         test.done();
     },
@@ -324,9 +324,9 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("(cond (false a) (true b))"),
             cond = ast[0];
 
-        test.deepEqual(cond, new lisb.COND([
-                    new lisb.CLAUSE(new lisb.ID('false'), new lisb.ID('a')),
-                    new lisb.CLAUSE(new lisb.ID('true'), new lisb.ID('b'))
+        test.deepEqual(cond, new lisb.Cond([
+                    new lisb.Clause(new lisb.Id('false'), new lisb.Id('a')),
+                    new lisb.Clause(new lisb.Id('true'), new lisb.Id('b'))
                 ]));
 
         test.done();
@@ -336,9 +336,9 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("(cond (false x) (else  y))"),
             cond = ast[0];
 
-        test.deepEqual(cond, new lisb.COND([
-                new lisb.CLAUSE(new lisb.ID('false'), new lisb.ID('x')), 
-                new lisb.CLAUSE(true, new lisb.ID('y'))]));
+        test.deepEqual(cond, new lisb.Cond([
+                new lisb.Clause(new lisb.Id('false'), new lisb.Id('x')), 
+                new lisb.Clause(true, new lisb.Id('y'))]));
 
         test.done();          
     },
@@ -347,7 +347,7 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("(cond (else  y))"),
             cond = ast[0];
 
-        test.deepEqual(cond, new lisb.COND([new lisb.CLAUSE(true,  new lisb.ID('y'))]));
+        test.deepEqual(cond, new lisb.Cond([new lisb.Clause(true,  new lisb.Id('y'))]));
 
         test.done();
     },
@@ -398,8 +398,8 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("(lambda () #t)"),
             lambda = ast[0];
 
-        test.ok(lambda instanceof lisb.LAMBDA);
-        test.deepEqual(lambda, new lisb.LAMBDA([], [ true ]));
+        test.ok(lambda instanceof lisb.Lambda);
+        test.deepEqual(lambda, new lisb.Lambda([], [ true ]));
         test.done();
     },
 
@@ -407,8 +407,8 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("(lambda (a b c) (define (k) (- b 99)) a)"),
              lambdaBody = ast[0].body;
 
-        test.deepEqual(lambdaBody[0],  new lisb.DEF('k', new lisb.LAMBDA([],[ 
-                    new lisb.CALL(new lisb.ID('-'), [new lisb.ID('b'), 99 ])
+        test.deepEqual(lambdaBody[0],  new lisb.Def('k', new lisb.Lambda([],[ 
+                    new lisb.Call(new lisb.Id('-'), [new lisb.Id('b'), 99 ])
                 ])));
         test.done();
     },
@@ -439,7 +439,7 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("(let ((x 3)) (+ x x))"),
             letExpr = ast[0];
 
-        test.deepEqual(letExpr, new lisb.CALL(new lisb.LAMBDA([ new lisb.ID('x')], [new lisb.CALL(new lisb.ID('+'),[new lisb.ID('x'),new lisb.ID('x')])]), [ 3 ]));
+        test.deepEqual(letExpr, new lisb.Call(new lisb.Lambda([ new lisb.Id('x')], [new lisb.Call(new lisb.Id('+'),[new lisb.Id('x'),new lisb.Id('x')])]), [ 3 ]));
         
         test.done();
     },
@@ -449,7 +449,7 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("(set! a 2)"),
             set = ast[0];
 
-        test.deepEqual(set, new lisb.SET("a", 2));
+        test.deepEqual(set, new lisb.Set("a", 2));
 
         test.done();
     },
@@ -490,12 +490,12 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("'(999.999)"),
             pair = ast[0];
 
-        test.deepEqual(pair, new lisb.PAIR(999.999, lisb.NIL));
+        test.deepEqual(pair, new lisb.Pair(999.999, lisb.NIL));
 
         ast = lisb.parser.parse("'(1.0 -3.5 4)");
         pair = ast[0];
 
-        test.deepEqual(pair, new lisb.PAIR(1.0, new lisb.PAIR(-3.5, new lisb.PAIR(4, lisb.NIL))));        
+        test.deepEqual(pair, new lisb.Pair(1.0, new lisb.Pair(-3.5, new lisb.Pair(4, lisb.NIL))));        
 
         test.done();
     },
@@ -504,12 +504,12 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("'(\"foo\" \"bar\")"),
             pair = ast[0];
 
-        test.deepEqual(pair, new lisb.PAIR("foo", new lisb.PAIR("bar", lisb.NIL)));
+        test.deepEqual(pair, new lisb.Pair("foo", new lisb.Pair("bar", lisb.NIL)));
 
         ast = lisb.parser.parse("'('biz 'baz)");
         pair = ast[0];
 
-        test.deepEqual(pair, new lisb.PAIR(new lisb.SYMB("biz"), new lisb.PAIR(new lisb.SYMB("baz"), lisb.NIL)));
+        test.deepEqual(pair, new lisb.Pair(new lisb.Symb("biz"), new lisb.Pair(new lisb.Symb("baz"), lisb.NIL)));
 
         test.done();
     },
@@ -518,25 +518,34 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("'(foo bar)"),
             pair = ast[0];
 
-        test.deepEqual(pair, new lisb.PAIR(new lisb.ID("foo"), new lisb.PAIR(new lisb.ID("bar"), lisb.NIL)));
+        test.deepEqual(pair, new lisb.Pair(new lisb.Id("foo"), new lisb.Pair(new lisb.Id("bar"), lisb.NIL)));
 
         test.done();
     },
 
     "symbol expressions can contain keywords": function(test) {
-
-        var ast = lisb.parser.parse("'(define)"),
-            def = ast[0];
+        var keywords = ["define", "if", 'else', 'cond', 'let', 'lambda', 'set!'];
+        for (var i = 0; i < keywords.length; i++) {
+            var ast = lisb.parser.parse("'(KW)".replace("KW", keywords[i])),
+                keyword = ast[0];
+            test.deepEqual(keyword, new lisb.Pair(new lisb.Id(keywords[i]), lisb.NIL));
+        }
         // TODO: The most elegant way to solve the above ought to be to change the parser
         // so that it has no keywords. This means more logic in the evaluator to determine the expression,
         // e.g. recognizing a parameter list.
         // Other ways to fix this would be to let symbol expressions contain the specified keywords
         // and just treat them differently here...
-        test.deepEqual(def, new lisb.PAIR(new lisb.ID("define"), lisb.NIL));
 
         test.done();
     },
 
+    "symbol expressions can contain symbols, strings and booleans": function(test) {
+        var ast = lisb.parser.parse("'('foo \"bar\" #t)"),
+            sexpr = ast[0];
+
+        test.deepEqual(sexpr, new lisb.Pair(new lisb.Symb("foo"), new lisb.Pair("bar", new lisb.Pair(true, lisb.NIL))));
+        test.done();
+    },
 
 
 

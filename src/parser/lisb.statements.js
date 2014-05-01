@@ -1,35 +1,35 @@
 (function(g) {
 "use strict";
 
-lisb.ID = function(name) { this.name = name; };
+lisb.Id = function(name) { this.name = name; };
 
-lisb.STRING = String;
+lisb.String = String;
 
-lisb.NUMBER = Number;
+lisb.Number = Number;
 
-lisb.BOOLEAN = Boolean;
+lisb.Boolean = Boolean;
 
-lisb.SYMB = function(name) { this.name = name; };
+lisb.Symb = function(name) { this.name = name; };
 
-lisb.PAIR = function(head,tail) {
+lisb.Pair = function(head,tail) {
      this.head = head; 
      this.tail = tail; 
 };
-lisb.NIL = new lisb.PAIR();
+lisb.NIL = new lisb.Pair();
 
 // = function(values) { this.values = values; };
 
-lisb.LAMBDA = function(params, body) { this.params = params; this.body = body; };
+lisb.Lambda = function(params, body) { this.params = params; this.body = body; };
 
-lisb.DEF = function(name, value) { this.name = name; this.value = value; };
+lisb.Def = function(name, value) { this.name = name; this.value = value; };
 
-lisb.SET = function(name, value) { this.name = name; this.value = value; };
+lisb.Set = function(name, value) { this.name = name; this.value = value; };
 
-lisb.CALL = function(func, args) { this.func = func; this.args = args; };
+lisb.Call = function(func, args) { this.func = func; this.args = args; };
 
-lisb.COND = function(clauses) { this.clauses = clauses; };
+lisb.Cond = function(clauses) { this.clauses = clauses; };
 
-lisb.CLAUSE = function(predicate, consequent) { this.predicate = predicate; this.consequent = consequent; };
+lisb.Clause = function(predicate, consequent) { this.predicate = predicate; this.consequent = consequent; };
 
 }(this));
 
