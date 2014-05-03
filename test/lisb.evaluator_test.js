@@ -2,6 +2,7 @@
 "use strict";
 var nodeunit = require('nodeunit');
 
+/*
 require('../src/lisb.evaluator.js');
 require('../src/parser/lisb.statements.js');
 require('../src/parser/lisb.parser.js');
@@ -16,7 +17,6 @@ var simpleTestValues = {
     "#t": true,
     "#f": false
 };
-
 
 exports.evaluator = nodeunit.testCase({
 
@@ -552,5 +552,6 @@ exports.evaluator = nodeunit.testCase({
     // TODO: Add begin expression
 
 });
+*/
 
 }());
