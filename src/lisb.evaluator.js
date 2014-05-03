@@ -16,25 +16,30 @@ var predefinedFunctions = {
     '>': function(a, b) {
         // TODO: fix this to be a variadic function with three get_params:
         // a,b, others. a must be greater than b and all values in others.
-        // TODO: all get_args must be numbers. Should we check this and throw an exception?
+        // TODO: all evaluate_args must be numbers. Should we check this and throw an exception?
         return a > b; 
     },
     '<': function(a, b) {
         // TODO: fix same as > function
         return a < b;
     },
+    'cons': cons,
 };
 
-function is_def(statement) {
-    return statement instanceof lisb.Def;
+function cons(h,t) {
+    return new lisb.Pair(h,t);
 }
 
-function is_id(statement) {
-    return statement instanceof lisb.Id;
+function is_def(statement) {
+    return statement instanceof lisb.Pair && get_name(statement.head) === "define";
+}
+
+function is_name(statement) {
+    return statement instanceof lisb.Name;
 }
 
 function is_call(statement) {
-    return statement instanceof lisb.Call;
+    return statement instanceof lisb.Pair;
 }
 
 function is_function(statement) {
@@ -42,19 +47,27 @@ function is_function(statement) {
 }
 
 function is_lambda(statement) {
-    return statement instanceof lisb.Lambda;
+    return statement instanceof lisb.Pair && get_name(statement.head) === "lambda";
+}
+
+function is_let(statement) {
+    return statement instanceof lisb.Pair && get_name(statement.head) === "let";
+}
+
+function is_if(statement) {
+    return statement instanceof lisb.Pair && get_name(statement.head) === "if";
 }
 
 function is_cond(statement) {
-    return statement instanceof lisb.Cond;
+    return statement instanceof lisb.Pair && get_name(statement.head) === "cond";
 }
 
 function is_assignment(statement) {
-    return statement instanceof lisb.Set;
+    return statement instanceof lisb.Pair && get_name(statement.head) === "set!";
 }
 
 function is_symbol(statement) {
-    return statement instanceof lisb.Symb;
+    return statement instanceof lisb.Symbol;
 }
 
 function get_name(id) {
@@ -69,12 +82,21 @@ function get_body(func) {
     return func.body;
 }
 
-function get_params(func) {
-    return func.params;
+function get_params(param_list) {
+    var params = [];
+    for (var p = param_list; p !== lisb.NIL; p = p.tail) {
+        params.push(p.head);
+    }
+
+    return params;
 }
 
-function get_args(call) {
-    return call.args;
+function evaluate_args(statement, environment) {
+    var evaluated_args = [];
+    for (var p = statement.tail; p !== lisb.NIL; p = p.tail) {
+        evaluated_args.push(evaluateStatement(p.head, environment));
+    }
+    return evaluated_args;
 }
 
 function find_var(id, environment) {
@@ -97,16 +119,34 @@ function get_value_of_var(id, environment) {
 }
 
 function define(statement, environment) {
-    environment[environment.length - 1][get_name(statement)] = { value: evaluateStatement(get_value(statement), environment) };
+    var params_or_name = statement.tail.head;
+    if(params_or_name instanceof lisb.Name) {
+        var value_pair = statement.tail.tail;
+        if (value_pair !== lisb.NIL && value_pair.tail === lisb.NIL) {
+            environment[environment.length - 1][get_name(params_or_name)] = { value: evaluateStatement(value_pair.head, environment) };
+        } 
+        else {
+            throw new Error("Definition of '" + get_name(params_or_name) + "' has an incorrect number of arguments.");
+        }
+    } 
+    else if(statement.tail.tail !== lisb.NIL) {
+        var lambda_params = params_or_name.tail;
+        var lambda_body = statement.tail.tail;
+        var lambda = create_lambda(new lisb.Pair(lambda_params, lambda_body), environment);
+
+        environment[environment.length - 1][get_name(params_or_name.head)] = { value: lambda };  
+    } else {
+        throw new Error("Function definition is malformed.");
+    }
 }
 
 function assign_variable(statement, environment) {
-    var variable = find_var(get_name(statement), environment);
+    var variable = find_var(get_name(statement.tail.head), environment);
     if (get_value(variable) === undefined) {
-        throw new LisbError("No definition found for: " + get_name(statement));
+        throw new Error("No definition found for: " + get_name(statement));
     }
 
-    variable.value = evaluateStatement(get_value(statement), environment);
+    variable.value = evaluateStatement(statement.tail.tail.head, environment);
 }
 
 function lookup_variable(statement, environment) {
@@ -120,13 +160,7 @@ function lookup_variable(statement, environment) {
 
 function call_func(func, statement, environment) {
 
-    var args = get_args(statement);
-    var evaluated_args = [];
-
-    for (var i = 0; i < args.length; i++) {
-        evaluated_args.push(evaluateStatement(args[i], environment));
-    }
-
+    var evaluated_args = evaluate_args(statement, environment);
 
     return func.apply(func, evaluated_args);
 }
@@ -137,20 +171,11 @@ function check_object_arguments(args, environment) {
         throw new Error("javascript objects only takes 1 or 2 arguments and " + args.length + " arguments was given.");
     }
 
-    var key = evaluateStatement(args[0], environment);
-
-    if (is_symbol(key)) {
-        key = get_name(key);
-    }
-    else if (typeof key !== "string") {
-        throw new Error("Only strings and symbols can be used as keys to access javascript object values");
-    }
-
-    return key;
+    return evaluateStatement(args[0], environment);
 }
 
 function call_to_object(obj, statement, environment) {
-    var args = get_args(statement);
+    var args = evaluate_args(statement, environment);
 
     var key = check_object_arguments(args, environment);
 
@@ -164,21 +189,16 @@ function call_to_object(obj, statement, environment) {
 }
 
 function get_func(statement, environment) {
-    return get_value_of_var(get_name(statement.func), environment) || 
-        predefinedFunctions[get_name(statement.func)] || 
-        evaluateStatement(statement.func, environment);
+    return get_value_of_var(get_name(statement.head), environment) || 
+        predefinedFunctions[get_name(statement.head)] || 
+        evaluateStatement(statement.head, environment);
 }
 
 function make_call(statement, environment) {
     var func = get_func(statement, environment);
 
-    // TODO: Should call_primitive_func and call_func
+    // TODO: Should call_func and call_to_object
     // take the statement as an argument? 
-    // call_func need's the statement to extract the
-    // name of the functions if there is an error in the arguments check.
-    // If this was not the case 'statement' could be replaced by 'get_args(statement)'
-    // which is what the statement is used for inside these funcions. hmmm...
-
     if (is_function(func)) {
         return call_func(func, statement, environment);
     }
@@ -188,18 +208,28 @@ function make_call(statement, environment) {
     else {
         // TODO: How to write test for this? It should never happen... 
         // Remove this and just assume that if all if-else-if's are false 
-        // then it func is an Object?
+        // then func is an Object?
         throw new Error("Statement '" + statement + "' was called, but is neither a predefined functions or currently defined");
     }
 }
 
 function eval_cond(statement, environment) {
-    for (var i = 0; i < statement.clauses.length; i++) {
-        var clause = statement.clauses[i];
-        if(evaluateStatement(clause.predicate, environment) !== false) {
-            return evaluateStatement(clause.consequent, environment);
-        }
+    for (var clause = statement.tail; clause !== lisb.NIL; clause = clause.tail) {
+        if (get_name(clause.head.head) === "else" || evaluateStatement(clause.head.head, environment) !== false) {
+            return evaluateStatement(clause.head.tail.head, environment);
+        } 
     }
+}
+
+function rewrite_to_cond(statement, environment) {
+    var predicate = statement.tail.head,
+        consequent = statement.tail.tail.head,
+        else_consequent = statement.tail.tail.tail.head;
+
+    return cons(new lisb.Name("cond"), 
+            cons(cons(predicate, cons(consequent, lisb.NIL)),
+            cons(cons(new lisb.Name("else"), cons(else_consequent, lisb.NIL)), lisb.NIL)), lisb.NIL);
+
 }
 
 function copy_environment(environment) {
@@ -230,46 +260,62 @@ function create_frame(parameters, args) {
     return frame;
 }
 
-function evaluate_body(func, environment) {
-    var function_body = get_body(func);
+function evaluate_body(body, environment) {
     var result = null;
-    for (var i = 0; i < function_body.length; i++) {
-        result = evaluateStatement(function_body[i], environment);
+    for (var p = body; p !== lisb.NIL;  p = p.tail) {
+        result = evaluateStatement(p.head, environment);
     }
     return result;
 }
 
-function create_lambda(statement, environment) {
-    var lambda_environment = copy_environment(environment);
+function create_js_function(statement_body, parameters, environment) {
     return function() {
-        var parameters = get_params(statement);
-
         check_arguments(parameters, arguments);
 
         var frame = create_frame(parameters, arguments);
 
-        lambda_environment.push(frame);
+        environment.push(frame);
         
-        var result = evaluate_body(statement, lambda_environment);
+        var result = evaluate_body(statement_body, environment);
 
-        lambda_environment.pop();
+        environment.pop();
 
         return result;
     };
+}
+
+function create_lambda(statement, environment) {
+    var lambda_environment = copy_environment(environment);
+    var parameters = get_params(statement.head);
+    return create_js_function(statement.tail, parameters, lambda_environment);
+}
+
+function rewrite_to_lambda_call(statement, environment) {
+    var params_args = statement.tail.head;
+    var let_body = statement.tail.tail;
+    var params = [];
+    var args = lisb.NIL;
+    for (var p = params_args; p !== lisb.NIL; p = p.tail) {
+        params.push(p.head.head);
+
+        args = new lisb.Pair(p.head.tail.head, args);
+    }
+    var func = create_js_function(let_body, params, environment);
+    return new lisb.Pair(func, args);
 }
 
 // TODO: Refactor if-else blocks into separate functions that get registered
 // with an evaluator. More lisb "handlers" can then be added dynamically.
 function evaluateStatement(statement, environment) {
     
-    if(is_def(statement)) {
-        define(statement, environment);
-    }
-    else if (is_id(statement)) {
+    if (is_name(statement)) {
         return lookup_variable(statement, environment);
     }
-    else if (is_call(statement)) {
-        return make_call(statement, environment); 
+    else if(is_def(statement)) {
+        define(statement, environment);
+    }
+    else if (is_if(statement)) {
+        return eval_cond(rewrite_to_cond(statement, environment), environment);
     }
     else if (is_cond(statement)) {
         return eval_cond(statement, environment);
@@ -278,7 +324,13 @@ function evaluateStatement(statement, environment) {
         assign_variable(statement, environment);
     } 
     else if (is_lambda(statement)) {
-        return create_lambda(statement, environment);
+        return create_lambda(statement.tail, environment);
+    }
+    else if (is_let(statement)) {
+        return make_call(rewrite_to_lambda_call(statement, environment), environment);
+    }
+    else if (is_call(statement)) {
+        return make_call(statement, environment); 
     }
     else { // Self evaluating expression...
         return statement;
@@ -291,8 +343,8 @@ function parseAndEvaluate(statments) {
         environment = [create_empty_frame()],
         result = null;
 
-    for(var i = 0; i < ast.length; i++) {
-        result = evaluateStatement(ast[i], environment);
+    for(var p = ast; p !== lisb.NIL; p = p.tail) {
+        result = evaluateStatement(p.head, environment);
     }
 
     return result;

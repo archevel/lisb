@@ -26,24 +26,8 @@ lisb.Pair = function(head,tail) {
      Object.freeze(this);
 };
 
-lisb.NIL = {
-    is_list: true
-};
-Object.freeze(lisb.NIL);
+lisb.NIL = new lisb.Pair();
 
-// // = function(values) { this.values = values; };
-
-// lisb.Lambda = function(params, body) { this.params = params; this.body = body; };
-
-// lisb.Def = function(name, value) { this.name = name; this.value = value; };
-
-// lisb.Set = function(name, value) { this.name = name; this.value = value; };
-
-// lisb.Call = function(func, args) { this.func = func; this.args = args; };
-
-// lisb.Cond = function(clauses) { this.clauses = clauses; };
-
-// lisb.Clause = function(predicate, consequent) { this.predicate = predicate; this.consequent = consequent; };
 
 }(this));
 

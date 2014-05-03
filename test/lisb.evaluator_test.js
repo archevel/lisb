@@ -2,10 +2,11 @@
 "use strict";
 var nodeunit = require('nodeunit');
 
-/*
+
 require('../src/lisb.evaluator.js');
 require('../src/parser/lisb.statements.js');
 require('../src/parser/lisb.parser.js');
+
 
 var simpleTestValues = {
     '-1':-1,
@@ -13,11 +14,10 @@ var simpleTestValues = {
     '1':1,
     '9123.3': 9123.3,
     '"a string"': "a string",
-    "'a-symbol": new lisb.Symb("a-symbol"),
+    "'a-symbol": new lisb.Symbol(new lisb.Name("a-symbol")),
     "#t": true,
     "#f": false
 };
-
 exports.evaluator = nodeunit.testCase({
 
     'evaluates simple expessions': function(test) {
@@ -44,7 +44,6 @@ exports.evaluator = nodeunit.testCase({
 
         test.done();
     },
-
     "evaluates a definition to it's value in a script": function(test) {
 
         var script = '"some other script stuff" (define x INPUT) x';
@@ -126,14 +125,13 @@ exports.evaluator = nodeunit.testCase({
         test.done();
 
     },
-
     "evaluates if expressions": function(test) {
         var actual = lisb.evaluate("(if #t 1)");
         test.strictEqual(actual, 1);
-
+      
         actual = lisb.evaluate("(if #t 2)");
         test.strictEqual(actual, 2);
-
+        
         actual = lisb.evaluate('(if #f 2 "alfonso")');
         test.strictEqual(actual, "alfonso");
 
@@ -149,12 +147,11 @@ exports.evaluator = nodeunit.testCase({
         actual = lisb.evaluate('(if -1 5)');
         test.strictEqual(actual, 5);
 
-                actual = lisb.evaluate('(if 9991 5 "some string")');
+        actual = lisb.evaluate('(if 9991 5 "some string")');
         test.strictEqual(actual, 5);
 
         test.done();        
     },
-
     "variables can be used in if expressions": function(test) {
         var actual = lisb.evaluate('(define a #t) (if a 5)');
         test.strictEqual(actual, 5);
@@ -298,7 +295,7 @@ exports.evaluator = nodeunit.testCase({
         });
         test.done();
     },
-
+    
     "local definitions do not leak to outer scope": function(test) {
         test.throws(function() {
             lisb.evaluate('(define (z) (define x 3) 5) (z) x');
@@ -331,10 +328,20 @@ exports.evaluator = nodeunit.testCase({
 
         test.done();
     },
-
     "lambda functions works with different parameter names": function(test) {
         var actual = lisb.evaluate('((lambda (c d) (+ d c)) 7 14)');
         test.strictEqual(actual, 21);
+
+        test.done();
+    },
+
+    "let expressions bind the params to their values": function(test) {
+        var script = "(let ((a TEST_VAL)) a)";
+        for (var testVal in simpleTestValues) {
+            var actual = lisb.evaluate(script.replace("TEST_VAL", testVal));
+            test.deepEqual(actual, simpleTestValues[testVal]);
+        }
+
 
         test.done();
     },
@@ -398,7 +405,7 @@ exports.evaluator = nodeunit.testCase({
     },
     
 
-    "javascript objects' properties can be accessed with symbols and strings": function(test) {
+    "javascript objects' properties can be accessed with strings": function(test) {
         var objectKeys = ["foo", "--123!!!bar", '?'];
         for(var i = 0; i < objectKeys.length; i++) {
             for (var testValue in simpleTestValues) {
@@ -407,10 +414,7 @@ exports.evaluator = nodeunit.testCase({
                 var objectKey = objectKeys[i];
                 var expected = simpleTestValues[testValue];
                 global.myObject[objectKey] = expected;
-                var actual = lisb.evaluate("(myObject '" + objectKey +")");
-                test.strictEqual(actual, expected);
-
-                actual = lisb.evaluate('(myObject "' + objectKey + '")');
+                var actual = lisb.evaluate('(myObject "' + objectKey +'")');
                 test.strictEqual(actual, expected);
                 
             }
@@ -429,10 +433,7 @@ exports.evaluator = nodeunit.testCase({
                 var objectKey = objectKeys[i];
                 var expected = simpleTestValues[testValue];
 
-                var actual = lisb.evaluate("(myObject '" + objectKey +" " + testValue + ")");
-                test.deepEqual(global.myObject[objectKey], expected);
-
-                actual = lisb.evaluate('(myObject "' + objectKey + '")');
+                var actual = lisb.evaluate('(myObject "' + objectKey + '" ' + testValue + ')');
                 test.deepEqual(global.myObject[objectKey], expected);
                 
             }
@@ -444,11 +445,11 @@ exports.evaluator = nodeunit.testCase({
 
     "assignment to javascript object yields the value of the assigned expression": function(test) {
         global.myObject = {};
-        var actual = lisb.evaluate("(myObject 'foo 1)");
+        var actual = lisb.evaluate("(myObject \"foo\" 1)");
         test.strictEqual(actual, 1);
         
-        actual = lisb.evaluate("(myObject 'foo 'some_val)");
-        test.deepEqual(actual, new lisb.Symb('some_val'));
+        actual = lisb.evaluate("(myObject \"foo\" 'some_val)");
+        test.deepEqual(actual, new lisb.Symbol(new lisb.Name('some_val')));
 
         delete global.myObject;
         test.done();
@@ -457,56 +458,31 @@ exports.evaluator = nodeunit.testCase({
     "for javascript objects values and keys are evaluated": function(test) {
 
         global.myObject = {};
-        lisb.evaluate("(myObject 'foo (+ 1 2))");
-        test.strictEqual(global.myObject.foo, 3);
+        lisb.evaluate('(myObject "biz" (+ 1 2))');
+        test.strictEqual(global.myObject.biz, 3);
 
         global.myObject = {};
-        lisb.evaluate("(myObject ((lambda (x) x) 'floppety) (+ 1 2))");
+        lisb.evaluate('(myObject ((lambda (x) x) "floppety") (+ 1 2))');
         test.strictEqual(global.myObject.floppety, 3);
 
         test.done();
     },
 
 
-    "numbers can not be used as keys to objects": function(test) {
-        global.Biz = {'1': "some value"};
+    "numbers can also be used as keys to objects/arrays": function(test) {
+        global.Biz = ["some value", 33];
 
-        test.throws(function() {
-            lisb.evaluate("(Biz 1)");
-        }, function(e) {
-            return e.message === "Only strings and symbols can be used as keys to access javascript object values";
-        });
+        
+        var actual = lisb.evaluate("(Biz 0)");
+        test.strictEqual(actual, global.Biz[0]);
 
-        test.throws(function() {
-            lisb.evaluate("(Biz 1 3)");
-        }, function(e) {
-            return e.message === "Only strings and symbols can be used as keys to access javascript object values";
-        });
+        lisb.evaluate("(Biz 1 3)");
+        test.strictEqual(global.Biz[1], 3);
         
         delete global.Biz;
         test.done();
     },
 
-    "lambdas can not be used as keys to objects": function(test) {
-        global.Biz = {};
-        var lambda = lisb.evaluate("(lambda (x) x)");
-        global.Biz[lambda] = "a val";
-
-        test.throws(function() {
-            lisb.evaluate("(Biz (lambda (x) x))");
-        }, function(e) {
-            return e.message === "Only strings and symbols can be used as keys to access javascript object values";
-        });
-
-        test.throws(function() {
-            lisb.evaluate("(Biz (lambda (x) x) 33)");
-        }, function(e) {
-            return e.message === "Only strings and symbols can be used as keys to access javascript object values";
-        });
-
-        delete global.Biz;
-        test.done();
-    },
 
     "call to a javascript object require one to two arguments": function(test) {
         global.Hipster = {};
@@ -547,11 +523,56 @@ exports.evaluator = nodeunit.testCase({
 
         test.done();
     },
-    // TODO: Add symbol expressions...
+
+    "variable definitions must have right amount of arguments": function(test) {
+        test.throws(function() {
+            lisb.evaluate("(define x)");
+        }, function(e) {
+            return e.message === "Definition of 'x' has an incorrect number of arguments.";
+        });
+        
+        test.throws(function() {
+            lisb.evaluate("(define x 1 2)");
+        }, function(e) {
+            return e.message === "Definition of 'x' has an incorrect number of arguments.";
+        });
+        
+        test.done();
+    },
+
+    "variable definitions must have a name": function(test) {
+        test.throws(function() {
+            lisb.evaluate("(define 'x 1)");
+        });
+        
+        test.throws(function() {
+            lisb.evaluate('(define "x" 1)');
+        });
+        
+        test.throws(function() {
+            lisb.evaluate("(define '(brainz) 1)");
+        });
+
+        test.done();
+    },
+
+    "function definitions must have right amount of arguments": function(test) {
+
+        test.throws(function() {
+            lisb.evaluate("(define (x))");
+        });
+
+        test.throws(function() {
+            lisb.evaluate("(define () 1)");
+        });
+
+        test.done();
+    },
+
+
     // TODO: Add line numbers and column to error messages
     // TODO: Add begin expression
-
 });
-*/
+
 
 }());

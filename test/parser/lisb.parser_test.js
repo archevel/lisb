@@ -58,7 +58,6 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("-32");
 
         test.deepEqual(ast, new lisb.Pair(-32, lisb.NIL));
-        test.ok(ast.is_list);
         test.done();
     },
    'negative integer value': function(test) {
@@ -191,7 +190,6 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("(x)"),
             sublist = ast.head;
 
-        test.ok(sublist.is_list);
         test.deepEqual(sublist.head, new lisb.Name("x"));
 
         test.done();
