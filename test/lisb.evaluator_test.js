@@ -85,14 +85,6 @@ exports.evaluator = nodeunit.testCase({
         test.done();
     },
 
-    "assignments can not be used to define new variables": function(test) {
-        test.throws(function() {
-            lisb.evaluate("(set! a 2) a");
-        });
-
-        test.done();
-    },
-
     "assignments have 'undefined' as their value": function(test) {
         var actual = lisb.evaluate("(define a 1) (set! a 2)");
         test.strictEqual(actual, undefined);
@@ -250,58 +242,9 @@ exports.evaluator = nodeunit.testCase({
     },
 
     "defined functions with multiple statments in body will execute all statements": function(test) {
-
         var actual = lisb.evaluate('(define (my-gt a b) (define z 99) (+ z a b)) (my-gt 2 4)');
         test.strictEqual(actual, 105);        
 
-        test.done();
-    },
-
-    "an error occurs if value not found for parameter": function (test) {
-        
-        test.throws(function() {
-            lisb.evaluate('(define (x y z) 5) (x 99)');
-        }, function(e) {
-            return e instanceof Error && e.message === "Function requires 2 arguments, 1 found"; 
-        });
-
-        test.throws(function() {
-            lisb.evaluate('(define (x y z) 5) (x)');
-        }, function(e) {return e instanceof Error && e.message === "Function requires 2 arguments, 0 found"; });
-
-        test.throws(function() {
-            lisb.evaluate('(define (somenameyname y z) 5) (somenameyname)');
-        }, function(e) {return e instanceof Error && e.message === "Function requires 2 arguments, 0 found"; });
-
-        test.throws(function() {
-            lisb.evaluate('((lambda (y z) 5) 9 8 7)');
-        }, function(e) {
-            return e instanceof Error && e.message === "Function requires 2 arguments, 3 found"; 
-        });
-
-        test.done();
-    },
-
-    "unbound identifiers yield an error when evaluated": function(test) {
-        test.throws(function() {
-            lisb.evaluate('x');
-        }, function(e) {
-            return e instanceof Error && e.message === "Identifier 'x' is not bound to a value"; 
-        });
-        test.throws(function() {
-            lisb.evaluate('aina');
-        }, function(e) {
-            return e instanceof Error && e.message === "Identifier 'aina' is not bound to a value"; 
-        });
-        test.done();
-    },
-    
-    "local definitions do not leak to outer scope": function(test) {
-        test.throws(function() {
-            lisb.evaluate('(define (z) (define x 3) 5) (z) x');
-        }, function(e) {
-            return e instanceof Error && e.message === "Identifier 'x' is not bound to a value"; 
-        });
         test.done();
     },
 
@@ -393,16 +336,7 @@ exports.evaluator = nodeunit.testCase({
         test.done();
     },
 
-    "variables defined in the global scope can't be assigned values with set!": function(test) {
-        global.Foo = 9000;
-        test.throws(function() {
-            lisb.evaluate("(set! Foo 1)");
-        });
-        test.strictEqual(global.Foo, 9000);
-        
-        delete global.Foo;
-        test.done();
-    },
+
     
 
     "javascript objects' properties can be accessed with strings": function(test) {
@@ -483,26 +417,6 @@ exports.evaluator = nodeunit.testCase({
         test.done();
     },
 
-
-    "call to a javascript object require one to two arguments": function(test) {
-        global.Hipster = {};
-
-        test.throws(function() {
-            lisb.evaluate("(Hipster)");
-        }, function(e) {
-            return e.message === "javascript objects only takes 1 or 2 arguments and 0 arguments was given.";
-        });
-
-        test.throws(function() {
-            lisb.evaluate("(Hipster 'fiz 1 2)");
-        }, function(e) {
-            return e.message === "javascript objects only takes 1 or 2 arguments and 3 arguments was given.";
-        });
-        delete global.Hipster;
-        test.done();
-
-    },
-
     "javascript functions can be called":function(test) {
         global.myFunc = function() { return 3; };
         var actual = lisb.evaluate("(myFunc)");
@@ -524,17 +438,122 @@ exports.evaluator = nodeunit.testCase({
         test.done();
     },
 
+    "keywords can be redefined": function(test) {
+        
+        var keywords = ['define', 'set!', 'lambda', 'let', 'cond', 'if', 'else'];
+        for (var i = 0; i < keywords.length; i++) {
+            var kw = keywords[i];
+            var actual = lisb.evaluate("(let ((" + kw + " (lambda (x) x))) (" + kw + " 2))");
+            test.strictEqual(actual, 2);
+            actual = lisb.evaluate("(define (" + kw + " x) x) (" + kw + " 2)");
+            test.strictEqual(actual, 2);
+        }
+        
+        test.done();
+    },
+
+    /*************************
+     *  INVALID EXPRESSIONS  *
+     *************************/
+    "assignments can not be used to define new variables": function(test) {
+        test.throws(function() {
+            lisb.evaluate("(set! a 2) a");
+        }, function(e) {
+            return e instanceof Error && e.message === "Can not set undefined variable: a"; 
+        });
+
+        test.done();
+    },
+
+    "variables defined in the global scope can't be assigned values with set!": function(test) {
+        global.Foo = 9000;
+        test.throws(function() {
+            lisb.evaluate("(set! Foo 1)");
+        }, function(e) {
+            return e instanceof Error && e.message === "Can not set undefined variable: Foo"; 
+        });
+        test.strictEqual(global.Foo, 9000);
+        
+        delete global.Foo;
+        test.done();
+    },
+
+    "an error occurs if value not found for parameter": function (test) {
+        test.throws(function() {
+            lisb.evaluate('(define (x y z) 5) (x 99)');
+        }, function(e) {
+            return e instanceof Error && e.message === "Procedure x: expects 2 arguments, given 1: 99"; 
+        });
+
+        test.throws(function() {
+            lisb.evaluate('(define (x y z) 5) (x)');
+        }, function(e) {return e instanceof Error && e.message === "Procedure x: expects 2 arguments, given 0"; });
+
+        test.throws(function() {
+            lisb.evaluate('(define (somenameyname y z) 5) (somenameyname)');
+        }, function(e) {return e instanceof Error && e.message === "Procedure somenameyname: expects 2 arguments, given 0"; });
+
+        test.throws(function() {
+            lisb.evaluate('((lambda (y z) 5) 9 8 7)');
+        }, function(e) {
+            return e instanceof Error && e.message === "#<procedure>: expects 2 arguments, given 3: 9 8 7"; 
+        });
+        test.done();
+    },
+
+    "unbound identifiers yield an error when evaluated": function(test) {
+        test.throws(function() {
+            lisb.evaluate('x');
+        }, function(e) {
+            return e instanceof Error && e.message === "Reference to undefined identifier: x"; 
+        });
+        test.throws(function() {
+            lisb.evaluate('aina');
+        }, function(e) {
+            return e instanceof Error && e.message === "Reference to undefined identifier: aina"; 
+        });
+        test.done();
+    },
+    
+    "local definitions do not leak to outer scope": function(test) {
+        test.throws(function() {
+            lisb.evaluate('(define (z) (define x 3) 5) (z) x');
+        }, function(e) {
+            return e instanceof Error && e.message === "Reference to undefined identifier: x"; 
+        });
+        test.done();
+    },
+
+    "call to a javascript object require one to two arguments": function(test) {
+        global.Hipster = {};
+
+        test.throws(function() {
+            lisb.evaluate("(Hipster)");
+        }, function(e) {
+            return e.message === "Javascript objects only takes 1 or 2 arguments and 0 arguments was given.";
+        });
+
+        test.throws(function() {
+            lisb.evaluate("(Hipster 'fiz 1 2)");
+        }, function(e) {
+            return e.message === "Javascript objects only takes 1 or 2 arguments and 3 arguments was given.";
+        });
+        delete global.Hipster;
+        test.done();
+
+    },
+
     "variable definitions must have right amount of arguments": function(test) {
         test.throws(function() {
             lisb.evaluate("(define x)");
         }, function(e) {
-            return e.message === "Definition of 'x' has an incorrect number of arguments.";
+            return e.message === "Bad syntax (missing expression after identifier) in: (define x)";
         });
         
         test.throws(function() {
             lisb.evaluate("(define x 1 2)");
         }, function(e) {
-            return e.message === "Definition of 'x' has an incorrect number of arguments.";
+            return e.message === "Bad syntax (multiple expressions after identifier) in: (define x 1 2)";
         });
         
         test.done();
@@ -543,14 +562,20 @@ exports.evaluator = nodeunit.testCase({
     "variable definitions must have a name": function(test) {
         test.throws(function() {
             lisb.evaluate("(define 'x 1)");
+        }, function(e) {
+            return e instanceof Error && e.message ===  "Bad syntax at: 'x in: (define 'x 1)"; 
         });
         
         test.throws(function() {
             lisb.evaluate('(define "x" 1)');
+        }, function(e) {
+            return e instanceof Error && e.message === 'Bad syntax at: "x" in: (define "x" 1)'; 
         });
         
         test.throws(function() {
             lisb.evaluate("(define '(brainz) 1)");
+        }, function(e) {
+            return e instanceof Error && e.message ===  "Bad syntax at: '(brainz) in: (define '(brainz) 1)"; 
         });
 
         test.done();
@@ -560,18 +585,147 @@ exports.evaluator = nodeunit.testCase({
 
         test.throws(function() {
             lisb.evaluate("(define (x))");
+        }, function(e) {
+            return e instanceof Error && e.message === "Bad syntax (no expressions for procedure body) in: (define (x))";
         });
 
         test.throws(function() {
             lisb.evaluate("(define () 1)");
+        }, function(e) {
+            return e instanceof Error && e.message === "Bad syntax at: () in: (define () 1)";
+        });
+        test.done();
+    },
+
+    "if-conditionals without consequent fails": function(test) {
+        test.throws(function() {
+            lisb.evaluate("(if )");
+        }, function(e) {
+            return e instanceof Error && e.message === "Bad syntax (has 0 parts after keyword) in: (if)";
+        });
+
+        test.throws(function() {
+            lisb.evaluate("(if #f    )");
+        }, function(e) {
+            return e instanceof Error && e.message === "Bad syntax (has 1 part after keyword) in: (if #f)";
+        });
+        test.done();
+    },
+
+    "cond-conditionals yield undefined value when they have no parts after keyword": function(test) {
+        var res = lisb.evaluate("(cond )");
+        test.strictEqual(res, undefined);
+
+        test.done();
+    },
+
+    "defines are not ok in conditionals": function(test) {   
+        // TODO: Find out if these are interpreted as function invocations
+        test.throws(function() {
+            lisb.evaluate("(if 'truthyvalue ((define x 4) x))"); 
+        }, function(e) {
+            return e instanceof Error && e.message === "Statement '((define x 4) x)' was called, but is not currently defined";
+        });
+        test.throws(function() {
+            lisb.evaluate('(cond ("truthyvalue" ((define x "4") x)))');
+        }, function(e) {
+            return e instanceof Error && e.message === "Statement '((define x \"4\") x)' was called, but is not currently defined";
+        });
+           
+        test.throws(function() {
+            lisb.evaluate('(if ((define x 99) x) "value")');
+        }, function(e) {
+            return e instanceof Error && e.message === "Statement '((define x 99) x)' was called, but is not currently defined";
+        });
+        test.throws(function() {
+            lisb.evaluate("(cond (((define x #t) x) 'truthyvalue ))");
+        }, function(e) {
+            return e instanceof Error && e.message === "Statement '((define x #t) x)' was called, but is not currently defined";
         });
 
         test.done();
     },
 
+    'function call or literals not allowed as identifier in function definition': function(test) {
+        test.throws(function() {
+            lisb.evaluate("(define ((fun a) b c d) a)");
+        }, function(e) {
+            return e instanceof Error && e.message === "Bad syntax at: ((fun a) b c d) in: (define ((fun a) b c d) a)";
+        });
+        test.throws(function() {
+            lisb.evaluate("(define (4 b c d) a)");
+        }, function(e) {
+            return e instanceof Error && e.message === "Bad syntax at: (4 b c d) in: (define (4 b c d) a)";
+        });
+        test.done();
+    },
+
+    'variable definitions can not use literals as identifiers': function(test) {
+        test.throws(function() {
+            lisb.evaluate("(define 4 #t)");
+        });
+        test.throws(function() {
+            lisb.evaluate('(define "four" 99)');
+        });
+        test.throws(function() {
+            lisb.evaluate("(define 'symb 13)");
+        });
+        test.throws(function() {
+            lisb.evaluate("(define #f 13)");
+        });
+        test.done();
+    },
+
+    'function body can not end with definition': function(test) {
+        test.throws(function() {
+            lisb.evaluate("(define (f a) (define d 10))");
+        }, function(e) {
+            return e instanceof Error && e.message === "No expression after a sequence of internal definitions in: ((define d 10))";
+        }); 
+
+        test.throws(function() {
+            lisb.evaluate("(define (f a) (define d 10) (define (x b) (+ a (* b d))))");
+        }, function(e) {
+            return e instanceof Error && e.message === "No expression after a sequence of internal definitions in: ((define d 10) (define (x b) (+ a (* b d))))";
+        }); 
+
+        test.done();
+    },
+
+
+    "lambdas body can't end with definition": function(test) {
+        test.throws(function(){
+            lisb.evaluate("(lambda (x) (define z x))");
+        }, function(e) {
+            return e instanceof Error && e.message === "No expression after a sequence of internal definitions in: ((define z x))";
+        });
+
+        test.throws(function(){
+            lisb.evaluate("(lambda (x) (define identityFunc (x) x))");
+        }, function(e) {
+            return e instanceof Error && e.message === "No expression after a sequence of internal definitions in: ((define identityFunc (x) x))";
+        });
+
+        test.done();
+    },
+    'set! must reference a identifier and end with expression':function(test) {
+        test.throws(function() {
+            lisb.evaluate("(set!)");
+        }, function(e) {
+           return e instanceof Error && e.message === "Bad syntax (has 0 parts after keyword) in: (set!)";
+        });
+
+        test.throws(function() {
+            lisb.evaluate("(set! x )");
+        }, function(e) {
+           return e instanceof Error && e.message === "Bad syntax (has 1 part after keyword) in: (set! x)";
+        });
+
+        test.done();    
+    },
 
     // TODO: Add line numbers and column to error messages
-    // TODO: Add begin expression
+    // TODO: Add begin expression 
 });
 
 
