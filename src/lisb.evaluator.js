@@ -16,7 +16,7 @@ function statement_to_string(statement) {
     if (statement instanceof lisb.Name) {
         return statement.name;
     }
-    if (statement instanceof lisb.Symbol) {
+    if (statement instanceof lisb.Quote) {
         return "'" + statement_to_string(statement.value);
     }
     if (typeof statement === "string") {

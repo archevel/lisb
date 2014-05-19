@@ -2,10 +2,7 @@
 "use strict";
 var nodeunit = require('nodeunit');
 
-
-require('../src/lisb.evaluator.js');
-require('../src/parser/lisb.statements.js');
-require('../src/parser/lisb.parser.js');
+require('../dist/lisb.js');
 
 
 var simpleTestValues = {
@@ -14,7 +11,7 @@ var simpleTestValues = {
     '1':1,
     '9123.3': 9123.3,
     '"a string"': "a string",
-    "'a-symbol": new lisb.Symbol(new lisb.Name("a-symbol")),
+    "'a-symbol": new lisb.Quote(new lisb.Name("a-symbol")),
     "#t": true,
     "#f": false
 };
@@ -64,7 +61,7 @@ exports.js_interop = nodeunit.testCase({
         test.strictEqual(actual, 1);
         
         actual = lisb.evaluate("(myObject \"foo\" 'some_val)");
-        test.deepEqual(actual, new lisb.Symbol(new lisb.Name('some_val')));
+        test.deepEqual(actual, new lisb.Quote(new lisb.Name('some_val')));
 
         delete global.myObject;
         test.done();

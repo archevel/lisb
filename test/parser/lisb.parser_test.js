@@ -240,8 +240,8 @@ exports.parser = nodeunit.testCase({
                     ];
         for (var i = 0; i < validSymbols.length; i++) {
             var ast = lisb.parser.parse(validSymbols[i].input);
-            test.ok(ast.head instanceof lisb.Symbol);
-            test.deepEqual(ast.head, new lisb.Symbol(new lisb.Name(validSymbols[i].output)) );
+            test.ok(ast.head instanceof lisb.Quote);
+            test.deepEqual(ast.head, new lisb.Quote(new lisb.Name(validSymbols[i].output)) );
         }
         test.done();  
     },
@@ -257,7 +257,7 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("'()"),
             nil = ast.head;
         
-        test.deepEqual(nil, new lisb.Symbol(lisb.NIL));
+        test.deepEqual(nil, new lisb.Quote(lisb.NIL));
 
         test.done();
     },
@@ -266,12 +266,12 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("'(999.999)"),
             sexpr = ast.head;
 
-        test.deepEqual(sexpr, new lisb.Symbol(new lisb.Pair(999.999, lisb.NIL)));
+        test.deepEqual(sexpr, new lisb.Quote(new lisb.Pair(999.999, lisb.NIL)));
 
         ast = lisb.parser.parse("'(1.0 -3.5 4)");
         sexpr = ast.head;
 
-        test.deepEqual(sexpr, new lisb.Symbol(new lisb.Pair(1.0, new lisb.Pair(-3.5, new lisb.Pair(4, lisb.NIL)))));        
+        test.deepEqual(sexpr, new lisb.Quote(new lisb.Pair(1.0, new lisb.Pair(-3.5, new lisb.Pair(4, lisb.NIL)))));        
 
         test.done();
     },
@@ -280,13 +280,13 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("'(\"foo\" \"bar\")"),
             sexpr = ast.head;
 
-        test.deepEqual(sexpr, new lisb.Symbol(new lisb.Pair("foo", new lisb.Pair("bar", lisb.NIL))));
+        test.deepEqual(sexpr, new lisb.Quote(new lisb.Pair("foo", new lisb.Pair("bar", lisb.NIL))));
 
         ast = lisb.parser.parse("'('biz 'baz)");
         sexpr = ast.head;
 
-        test.deepEqual(sexpr, new lisb.Symbol(new lisb.Pair(new lisb.Symbol(new lisb.Name("biz")), 
-            new lisb.Pair(new lisb.Symbol(new lisb.Name("baz")), lisb.NIL))));
+        test.deepEqual(sexpr, new lisb.Quote(new lisb.Pair(new lisb.Quote(new lisb.Name("biz")), 
+            new lisb.Pair(new lisb.Quote(new lisb.Name("baz")), lisb.NIL))));
 
         test.done();
     },
@@ -295,7 +295,7 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("'(a-long-name-can-be-kind-of-too-long-sometimes shorty-short-short)"),
             sexpr = ast.head;
 
-        test.deepEqual(sexpr, new lisb.Symbol(new lisb.Pair(new lisb.Name("a-long-name-can-be-kind-of-too-long-sometimes"), 
+        test.deepEqual(sexpr, new lisb.Quote(new lisb.Pair(new lisb.Name("a-long-name-can-be-kind-of-too-long-sometimes"), 
             new lisb.Pair(new lisb.Name("shorty-short-short"), lisb.NIL))));
 
         test.done();
@@ -306,7 +306,7 @@ exports.parser = nodeunit.testCase({
         for (var i = 0; i < keywords.length; i++) {
             var ast = lisb.parser.parse("'(KW)".replace("KW", keywords[i])),
                 keyword = ast.head;
-            test.deepEqual(keyword, new lisb.Symbol(new lisb.Pair(new lisb.Name(keywords[i]), lisb.NIL)));
+            test.deepEqual(keyword, new lisb.Quote(new lisb.Pair(new lisb.Name(keywords[i]), lisb.NIL)));
         }
         test.done();
     },
@@ -315,7 +315,7 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("'('foo \"bar\" #t)"),
             sexpr = ast.head;
 
-        test.deepEqual(sexpr, new lisb.Symbol(new lisb.Pair(new lisb.Symbol(new lisb.Name("foo")), 
+        test.deepEqual(sexpr, new lisb.Quote(new lisb.Pair(new lisb.Quote(new lisb.Name("foo")), 
             new lisb.Pair("bar", new lisb.Pair(true, lisb.NIL)))));
         test.done();
     },
@@ -324,13 +324,13 @@ exports.parser = nodeunit.testCase({
         var ast = lisb.parser.parse("''arga-leken-börjar-nu"),
             symb = ast.head;
 
-        test.deepEqual(symb, new lisb.Symbol(new lisb.Symbol(new lisb.Name("arga-leken-börjar-nu"))));
+        test.deepEqual(symb, new lisb.Quote(new lisb.Quote(new lisb.Name("arga-leken-börjar-nu"))));
 
 
         ast = lisb.parser.parse("''\"vilken-färg?\"");
         symb = ast.head;
 
-        test.deepEqual(symb, new lisb.Symbol(new lisb.Symbol("vilken-färg?")));
+        test.deepEqual(symb, new lisb.Quote(new lisb.Quote("vilken-färg?")));
 
         test.done();
     },

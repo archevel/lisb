@@ -3,9 +3,7 @@
 var nodeunit = require('nodeunit');
 
 
-require('../src/lisb.evaluator.js');
-require('../src/parser/lisb.statements.js');
-require('../src/parser/lisb.parser.js');
+require('../dist/lisb.js');
 
 var simpleTestValues = {
     '-1':-1,
@@ -13,7 +11,7 @@ var simpleTestValues = {
     '1':1,
     '9123.3': 9123.3,
     '"a string"': "a string",
-    "'a-symbol": new lisb.Symbol(new lisb.Name("a-symbol")),
+    "'a-symbol": new lisb.Quote(new lisb.Name("a-symbol")),
     "#t": true,
     "#f": false
 };

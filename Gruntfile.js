@@ -31,15 +31,24 @@ module.exports = function(grunt) {
         ignores: 'src/parser/lisb.parser.js'
       },
       all: ['Gruntfile.js', 'generate_parser.js',  'src/**/*.js', 'test/**/*.js']
-    }
+    },
+    concat: {
+      options: {
+        separator: ";",
+      },
+      dist: {
+        src: ["src/lisb.evaluator.js", "src/parser/lisb.statements.js", "src/parser/lisb.parser.js"],
+        dest: "dist/lisb.js",
+      }
+    } 
   });
 
-  // Load the plugin that provides the "uglify" task.
   grunt.loadNpmTasks('grunt-shell');
   grunt.loadNpmTasks('grunt-contrib-nodeunit');
   grunt.loadNpmTasks('grunt-contrib-jshint');
+  grunt.loadNpmTasks('grunt-contrib-concat');
 
   // Default task(s).
-  grunt.registerTask('default', [ 'jshint', 'shell:generateParser', 'nodeunit:all']);
+  grunt.registerTask('default', [ 'concat', 'jshint', 'shell:generateParser', 'nodeunit:all']);
 
 };

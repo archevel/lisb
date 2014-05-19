@@ -12,7 +12,7 @@ lisb.Name = function(name) {
     Object.freeze(this);
 };
 
-lisb.Symbol = function(value) { 
+lisb.Quote = function(value) { 
     this.value = value; 
     Object.freeze(this);
 };

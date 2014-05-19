@@ -43,7 +43,7 @@ value
     | LPAR sexpr RPAR
     { $$ = $2; }
     | SYMBOL value
-    { $$ = new lisb.Symbol($2); }
+    { $$ = new lisb.Quote($2); }
     ;
 
 boolean

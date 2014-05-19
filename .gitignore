@@ -1,5 +1,8 @@
 # Parser generated from lisb.jison
 src/parser/lisb.parser.js
 
+# Generated distributable scripts
+dist/*
+
 # node dependencies
 node_modules
