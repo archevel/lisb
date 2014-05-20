@@ -49,6 +49,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
 
   // Default task(s).
-  grunt.registerTask('default', [ 'concat', 'jshint', 'shell:generateParser', 'nodeunit:all']);
+  grunt.registerTask('default', [ 'jshint', 'shell:generateParser', 'concat', 'nodeunit:all']);
 
 };
