@@ -1,4 +1,5 @@
 # LISB 
+[![Build Status](http://img.shields.io/travis/archevel/lisb.svg)](http://travis-ci.org/archevel/lisb)
 
 LISB stands for LISP InSide the Browser. It is a javascript implementation of a Lisp Evaluator. The aims of LISB are:
 
