@@ -32,7 +32,6 @@ function call_func(func, statement, environment) {
     return func.apply(func, evaluated_args);
 }
 
-<<<<<<< HEAD
 function evaluate_args(statement, environment) {
     var evaluated_args = [];
     for (var p = statement.tail; p !== lisb.NIL; p = p.tail) {
@@ -40,8 +39,6 @@ function evaluate_args(statement, environment) {
     }
     return evaluated_args;
 }
-=======
->>>>>>> 7de692b4a26aacb0608114e3e50594194dc65922
 
 function check_object_arguments(args, environment) {
     if (args.length < 1 || args.length > 2) {
