@@ -34,10 +34,27 @@ module.exports = function(grunt) {
     },
     concat: {
       options: {
-        separator: ";",
+        separator: ";\n",
+      },
+      evaluator: {
+        options: {
+          banner: '(function() {\n"use strict";\n\n',
+          footer: "}());", 
+        },
+        src: [ 
+          "src/lisb.core.js", 
+          "src/lisb.variables.js", 
+          "src/lisb.definitions.js", 
+          "src/lisb.assignments.js", 
+          "src/lisb.conditionals.js",  
+          "src/lisb.lambdas.js", 
+          "src/lisb.calls.js",
+          "src/lisb.initializer.js"
+        ],
+        dest: "dist/lisb.evaluator.js",
       },
       dist: {
-        src: ["src/lisb.evaluator.js", "src/parser/lisb.statements.js", "src/parser/lisb.parser.js"],
+        src: ["dist/lisb.evaluator.js","src/parser/lisb.statements.js", "src/parser/lisb.parser.js"],
         dest: "dist/lisb.js",
       }
     } 
@@ -49,6 +66,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
 
   // Default task(s).
-  grunt.registerTask('default', [ 'jshint', 'shell:generateParser', 'concat', 'nodeunit:all']);
+  grunt.registerTask('default', [ 'jshint', 'shell:generateParser', 'concat:evaluator', 'concat:dist', 'nodeunit:all']);
 
 };

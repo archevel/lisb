@@ -98,7 +98,7 @@ exports.conditionals = nodeunit.testCase({
         });
 
         test.throws(function() {
-            lisb.evaluate("(if #f    )");
+            lisb.evaluate("(if #f)");
         }, function(e) {
             return e instanceof Error && e.message === "Bad syntax (has 1 part after keyword) in: (if #f)";
         });
