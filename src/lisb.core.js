@@ -70,6 +70,17 @@ function get_value(valuable) {
     return valuable.value;
 }
 
+<<<<<<< HEAD
+=======
+function evaluate_args(statement, environment) {
+    var evaluated_args = [];
+    for (var p = statement.tail; p !== lisb.NIL; p = p.tail) {
+        evaluated_args.push(evaluate_sexpr(p.head, environment));
+    }
+    return evaluated_args;
+}
+
+>>>>>>> 7de692b4a26aacb0608114e3e50594194dc65922
 function find_var(id, environment) {
     for(var i = environment.length - 1; i >= 0; i--) {
         var variable = environment[i][id];
@@ -98,7 +109,11 @@ function evaluate_sexpr(statement, environment) {
             return lisb.handlers[i].handle(statement, environment);
         }
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 7de692b4a26aacb0608114e3e50594194dc65922
     // Self evaluating expression...
     return statement;
     
